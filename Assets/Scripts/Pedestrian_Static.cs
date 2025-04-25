@@ -35,7 +35,6 @@ public class Pedestrian_Static : MonoBehaviour
     [HideInInspector] public int agent_index;
     public int num_candidate_directions = 32;
     public float max_speed = 2.5f;
-    public float speed = 2f;
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
     public float aggression = 1f;
@@ -45,6 +44,10 @@ public class Pedestrian_Static : MonoBehaviour
     [HideInInspector]   public Vector3 position => this.transform.position;
     [HideInInspector]   public Vector3 velocity => this.current_velocity;
     [HideInInspector]   public float radius => this.spatial_radius;
+
+    [Header("=== Non-RVO ===")]
+    public float acceleration = 1.5f;
+    public float angular_speed = 60f;
 
     /* =========
     Jobification
@@ -115,44 +118,62 @@ public class Pedestrian_Static : MonoBehaviour
         // Designate the desired direction and velocity
         desired_direction = (destination - transform.position).normalized;
         desired_velocity = desired_direction * max_speed;
-        current_velocity = desired_velocity;
 
-        // If we dont' have any neighbors to consider, end early
-        if (neighbors.Length == 0) return;
+        // If we have neighbors, identify optimal velocity using RVO
+        if (neighbors.Length > 0) {
+             // Initialize the job
+            direction_job = new DirectionJob() {
+                candidate_directions = candidate_directions,
+                neighbors = neighbors,
+                agent_index = agent_index,
+                position = (float2)transform.position.ToVector2(),
+                current_velocity = (float2)current_velocity.ToVector2(),
+                desired_velocity = (float2)desired_velocity.ToVector2(),
+                radius = spatial_radius,
+                max_speed = max_speed,
+                aggressiveness = aggression,
+                candidate_direction_results = candidate_direction_results
+            };
+            direction_job_handler = direction_job.Schedule(num_candidate_directions, 16);
+            JobHandle.ScheduleBatchedJobs();
+            direction_job_handler.Complete();
 
-        // We use burst compilation for this operation
-        // The burst compilation will query a list of possible directions and look at all neighbor indices
-        
-        // Initialize the job
-        direction_job = new DirectionJob() {
-            candidate_directions = candidate_directions,
-            neighbors = neighbors,
-            agent_index = agent_index,
-            position = (float2)transform.position.ToVector2(),
-            current_velocity = (float2)current_velocity.ToVector2(),
-            desired_velocity = (float2)desired_velocity.ToVector2(),
-            radius = spatial_radius,
-            max_speed = max_speed,
-            aggressiveness = aggression,
-            candidate_direction_results = candidate_direction_results
-        };
-        direction_job_handler = direction_job.Schedule(num_candidate_directions, 16);
-        JobHandle.ScheduleBatchedJobs();
-        direction_job_handler.Complete();
-
-        // Get the penalties as a new array
-        candidate_rankings = direction_job.candidate_direction_results.ToArray();
-        Array.Sort(candidate_rankings, (v1,v2)=>v1.penalty.CompareTo(v2.penalty));
-        current_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
+            // Get the penalties as a new array
+            candidate_rankings = direction_job.candidate_direction_results.ToArray();
+            Array.Sort(candidate_rankings, (v1,v2)=>v1.penalty.CompareTo(v2.penalty));
+            desired_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
+        }
     }
 
     private void FixedUpdate() {
         Vector3 diff_pos = destination - transform.position;
-        initialized = diff_pos.magnitude > 0.01f;
+        initialized = diff_pos.magnitude > 0.1f;
         if (!initialized) return;
 
-        transform.forward = current_velocity.normalized;
-        transform.position += transform.forward * 2f * Time.fixedDeltaTime;
+        // Rotate the agent to face the direction of the optimal velocity,. but only if the optimal velocity isn't Vector3.zero
+        Quaternion target_rotation = (desired_velocity != Vector3.zero) 
+            ? Quaternion.LookRotation(desired_velocity)
+            : Quaternion.LookRotation(diff_pos);
+        float angle_difference = Quaternion.Angle(transform.rotation, target_rotation);
+        float angular_step = angular_speed * Time.fixedDeltaTime;
+        // Rotate towards the target rotation but do not overshoot
+        if (angular_step > angle_difference) transform.rotation = target_rotation;
+        else transform.rotation = Quaternion.RotateTowards(transform.rotation, target_rotation, angular_step);
+
+        // Calcualte the difference between our current velocity and the optimal velocity
+        Vector3 diff = desired_velocity - current_velocity;
+
+        // As long as there is a different in the two velocities, we HAVE to translate.
+        if (diff.sqrMagnitude > 0f) {
+            // Calculate the step needed to add to the current velocity
+            Vector3 vel_step = diff.normalized * acceleration * Time.fixedDeltaTime;
+            // Increment current velocity based on velStep, except in the case that the velocity step overshoots the optimal velocity
+            if (vel_step.sqrMagnitude > diff.sqrMagnitude) current_velocity = desired_velocity;
+            else current_velocity += vel_step;
+        }
+
+        // Translate the agent
+        transform.position += current_velocity * Time.fixedDeltaTime;
     }
 
     private void OnDestroy() {
