@@ -81,12 +81,12 @@ MonoBehaviour:
   initialized: 0
   angle_threshold: 90
   agent_index: 0
-  num_candidate_directions: 64
+  num_candidate_directions: 128
   max_speed: 1.5
   speed: 2
-  visual_radius: 10
-  spatial_radius: 1
-  aggression: 1
+  visual_radius: 4
+  spatial_radius: 0.5
+  aggression: 0.5
   current_velocity: {x: 0, y: 0, z: 0}
   desired_direction: {x: 0, y: 0, z: 0}
   desired_velocity: {x: 0, y: 0, z: 0}

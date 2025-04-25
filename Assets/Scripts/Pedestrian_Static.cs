@@ -96,9 +96,19 @@ public class Pedestrian_Static : MonoBehaviour
         List<int> result_indices = new List<int>();
         GenerateAgents.current.QueryRadius(transform.position, 5f, ref result_indices);
 
+        List<GenerateAgents.AgentData> neighbor_data = new List<GenerateAgents.AgentData>();
+        for(int i = 0; i < result_indices.Count; i++) {
+            GenerateAgents.AgentData other = GenerateAgents.current.agent_data[result_indices[i]];
+            Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
+            Vector2Int b = new Vector2Int(Mathf.RoundToInt((other.position[0] - transform.position.x)*10), Mathf.RoundToInt((other.position[1] - transform.position.z) * 10));
+            int dot = a.x * b.x + a.y * b.y;
+            if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
+                neighbor_data.Add(other);
+            }
+        }
+
         // Updating our neighbor_indices nativearray
-        neighbors = new NativeArray<GenerateAgents.AgentData>(result_indices.Count, Allocator.TempJob);
-        for(int i = 0; i < result_indices.Count; i++) neighbors[i] = GenerateAgents.current.agent_data[result_indices[i]];
+        neighbors = new NativeArray<GenerateAgents.AgentData>(neighbor_data.ToArray(), Allocator.TempJob);
     }
 
     private void Processing() {
