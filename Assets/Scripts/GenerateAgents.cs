@@ -53,11 +53,11 @@ public class GenerateAgents : MonoBehaviour
     [HideInInspector] public Pedestrian_Static[] agent_components;
     [HideInInspector] public AgentData[] agent_data;
     [HideInInspector] public Dictionary<GameObject, int> agent_index_map;
-    private KDTree tree;
-    private KDQuery query;
+    protected KDTree tree;
+    protected KDQuery query;
 
     #if UNITY_EDITOR
-    void OnDrawGizmos() {
+    protected virtual void OnDrawGizmos() {
         Vector3 _bounds = new Vector3(bounds.x, 0f, bounds.y);
         Vector3 centroid = _bounds/2f;
         Gizmos.color = bounds_color;
@@ -75,7 +75,7 @@ public class GenerateAgents : MonoBehaviour
         Generate();
     }
 
-    public void Generate() {
+    public virtual void Generate() {
         // Initialize the lists for KDTree
         agent_positions = new Vector3[num_agents];
         agent_components = new Pedestrian_Static[num_agents];
@@ -107,7 +107,7 @@ public class GenerateAgents : MonoBehaviour
         query = new KDQuery();
     }
 
-    private void LateUpdate() {
+    protected virtual void LateUpdate() {
         // Update each agent's data
         // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
         for(int i = 0; i < agent_positions.Length; i++) {

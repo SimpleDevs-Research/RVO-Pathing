@@ -25,6 +25,7 @@ public class Pedestrian_Static : MonoBehaviour
     }
 
     [Header("=== Agent Settings ===")]
+    public bool generate_destination_on_start = true;
     public Vector3 destination;
     public bool initialized = false;
 
@@ -59,6 +60,7 @@ public class Pedestrian_Static : MonoBehaviour
     private JobHandle direction_job_handler;
     public CandidateDirection[] candidate_rankings;
 
+    /*
     #if UNITY_EDITOR
     void OnDrawGizmosSelected() {
         // Return early if not even playing
@@ -74,10 +76,12 @@ public class Pedestrian_Static : MonoBehaviour
         Gizmos.DrawRay(transform.position, current_velocity);
     }
     #endif
+    */
 
     private void Start() {
         // Confirm destination
-        this.destination = (GenerateAgents.current != null) ? GenerateAgents.current.GetRandomPointInBounds() : transform.position;
+        if (generate_destination_on_start) 
+            this.destination = (GenerateAgents.current != null) ? GenerateAgents.current.GetRandomPointInBounds() : transform.position;
 
         // Initialize candidate directions that can be jobified
         float2[] candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, max_speed);
