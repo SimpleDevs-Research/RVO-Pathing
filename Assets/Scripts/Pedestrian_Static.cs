@@ -38,7 +38,6 @@ public class Pedestrian_Static : MonoBehaviour
     public float max_speed = 2.5f;
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
-    public float aggression = 1f;
     [HideInInspector]   public Vector3 current_velocity;
     [HideInInspector]   public Vector3 desired_direction; // normalized
     [HideInInspector]   public Vector3 desired_velocity;
@@ -62,7 +61,7 @@ public class Pedestrian_Static : MonoBehaviour
     private NativeArray<GenerateAgents.AgentData> neighbors;
     private DirectionJob direction_job;
     private JobHandle direction_job_handler;
-    public CandidateDirection[] candidate_rankings;
+    private CandidateDirection[] candidate_rankings;
 
     #if UNITY_EDITOR
     void OnDrawGizmos() {
@@ -90,7 +89,8 @@ public class Pedestrian_Static : MonoBehaviour
             this.destination = (GenerateAgents.current != null) ? GenerateAgents.current.GetRandomPointInBounds() : transform.position;
 
         // Initialize candidate directions that can be jobified
-        candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, 0.1f, max_speed, 0.1f);
+        candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, 1f, max_speed, 0.5f);
+        //candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, max_speed);
         candidate_directions = new NativeArray<float2>(candidate_directions_template.Count+1, Allocator.Persistent);
         candidate_direction_results = new NativeArray<CandidateDirection>(candidate_directions_template.Count+1, Allocator.Persistent);
     }
@@ -145,8 +145,6 @@ public class Pedestrian_Static : MonoBehaviour
                 current_velocity = (float2)current_velocity.ToVector2(),
                 desired_velocity = (float2)desired_velocity.ToVector2(),
                 radius = spatial_radius,
-                max_speed = max_speed,
-                aggressiveness = aggression,
                 candidate_direction_results = candidate_direction_results
             };
         direction_job_handler = direction_job.Schedule(candidate_directions_template.Count+1, 128);
@@ -217,8 +215,6 @@ public class Pedestrian_Static : MonoBehaviour
         [ReadOnly] public float2 current_velocity;  // Thecurrent 2D velocity in world space
         [ReadOnly] public float2 desired_velocity;  // The desired velocity this agent wants to move towards
         [ReadOnly] public float radius;     // Radius of this agent
-        [ReadOnly] public float max_speed;  // Maximum speed of this agent
-        [ReadOnly] public float aggressiveness; // Aggressiveness of this agent
         // Outputs
         [WriteOnly] public NativeArray<CandidateDirection> candidate_direction_results;
 
@@ -271,15 +267,16 @@ public class Pedestrian_Static : MonoBehaviour
                     if (theta_diff < 0f) theta_diff += 2f * math.PI;
 
                     if (theta_left < theta_right) {
-                        if (theta_left <= theta_diff && theta_diff <= theta_right) cost = 1000f;
+                        if (theta_left <= theta_diff && theta_diff <= theta_right) cost = 100f;
                     }
                     else {
-                        if (theta_right <= theta_diff && theta_diff <= theta_left) cost = 1000f;
+                        if (theta_right <= theta_diff && theta_diff <= theta_left) cost = 100f;
                     }
                 }
 
                 // Determine the final penalty cost
                 cost = math.max(math.length(candidate_direction - desired_velocity), cost);
+                if (cost == 100f) break;
             }
 
             // output result
