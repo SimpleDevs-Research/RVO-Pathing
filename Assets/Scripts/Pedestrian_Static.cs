@@ -42,17 +42,21 @@ public class Pedestrian_Static : MonoBehaviour
     [HideInInspector]   public Vector3 current_velocity;
     [HideInInspector]   public Vector3 desired_direction; // normalized
     [HideInInspector]   public Vector3 desired_velocity;
+    [HideInInspector]   public Vector3 optimal_velocity;
+    [HideInInspector]   public Vector3 prev_current_velocity;
     [HideInInspector]   public Vector3 position => this.transform.position;
-    [HideInInspector]   public Vector3 velocity => this.current_velocity;
+    [HideInInspector]   public Vector3 velocity => this.optimal_velocity;
     [HideInInspector]   public float radius => this.spatial_radius;
 
     [Header("=== Non-RVO ===")]
+    public bool draw_gizmos = false;
     public float acceleration = 1.5f;
     public float angular_speed = 60f;
 
     /* =========
     Jobification
     ========= */
+    private List<float2> candidate_directions_template;
     private NativeArray<float2> candidate_directions;
     private NativeArray<CandidateDirection> candidate_direction_results;
     private NativeArray<GenerateAgents.AgentData> neighbors;
@@ -60,11 +64,14 @@ public class Pedestrian_Static : MonoBehaviour
     private JobHandle direction_job_handler;
     public CandidateDirection[] candidate_rankings;
 
-    /*
     #if UNITY_EDITOR
-    void OnDrawGizmosSelected() {
-        // Return early if not even playing
-        if (!Application.isPlaying) return;
+    void OnDrawGizmos() {
+        // Return early if not even playing or if we disabled gizmos
+        if (!draw_gizmos || !Application.isPlaying) return;
+
+        Gizmos.color = Color.black;
+        Gizmos.DrawRay(transform.position, current_velocity);
+        Gizmos.DrawLine(transform.position, destination);
 
         Gizmos.color = Color.blue;
         for(int i = 0; i < num_candidate_directions; i++) {
@@ -76,7 +83,6 @@ public class Pedestrian_Static : MonoBehaviour
         Gizmos.DrawRay(transform.position, current_velocity);
     }
     #endif
-    */
 
     private void Start() {
         // Confirm destination
@@ -84,13 +90,9 @@ public class Pedestrian_Static : MonoBehaviour
             this.destination = (GenerateAgents.current != null) ? GenerateAgents.current.GetRandomPointInBounds() : transform.position;
 
         // Initialize candidate directions that can be jobified
-        float2[] candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, max_speed);
-        candidate_directions = new NativeArray<float2>(num_candidate_directions, Allocator.Persistent);
-        candidate_direction_results = new NativeArray<CandidateDirection>(num_candidate_directions, Allocator.Persistent);
-        for(int i = 0; i < num_candidate_directions; i++) {
-            candidate_directions[i] = candidate_directions_template[i];
-            candidate_direction_results[i] = new CandidateDirection(i);
-        }
+        candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, 0.1f, max_speed, 0.1f);
+        candidate_directions = new NativeArray<float2>(candidate_directions_template.Count+1, Allocator.Persistent);
+        candidate_direction_results = new NativeArray<CandidateDirection>(candidate_directions_template.Count+1, Allocator.Persistent);
     }
 
     private void Update() {
@@ -115,17 +117,26 @@ public class Pedestrian_Static : MonoBehaviour
         }
 
         // Updating our neighbor_indices nativearray
-        neighbors = new NativeArray<GenerateAgents.AgentData>(neighbor_data.ToArray(), Allocator.TempJob);
+        neighbors = new NativeArray<GenerateAgents.AgentData>(neighbor_data.ToArray(), Allocator.Persistent);
     }
 
     private void Processing() {
         // Designate the desired direction and velocity
         desired_direction = (destination - transform.position).normalized;
         desired_velocity = desired_direction * max_speed;
+        optimal_velocity = desired_velocity;
 
         // If we have neighbors, identify optimal velocity using RVO
-        if (neighbors.Length > 0) {
-             // Initialize the job
+        if (neighbors.Length == 0) return;
+
+        // Update candidate directions with the current desired velocity
+        for (int i = 0; i < candidate_directions_template.Count; i++) {
+                candidate_directions[i] = candidate_directions_template[i];
+                candidate_direction_results[i] = new CandidateDirection(i);
+            }
+            candidate_directions[candidate_directions_template.Count] = (float2)desired_velocity.ToVector2();
+            candidate_direction_results[candidate_directions_template.Count] = new CandidateDirection(candidate_directions_template.Count);
+            // Initialize the job
             direction_job = new DirectionJob() {
                 candidate_directions = candidate_directions,
                 neighbors = neighbors,
@@ -138,15 +149,14 @@ public class Pedestrian_Static : MonoBehaviour
                 aggressiveness = aggression,
                 candidate_direction_results = candidate_direction_results
             };
-            direction_job_handler = direction_job.Schedule(num_candidate_directions, 16);
-            JobHandle.ScheduleBatchedJobs();
-            direction_job_handler.Complete();
+        direction_job_handler = direction_job.Schedule(candidate_directions_template.Count+1, 128);
+        JobHandle.ScheduleBatchedJobs();
+        direction_job_handler.Complete();
 
-            // Get the penalties as a new array
-            candidate_rankings = direction_job.candidate_direction_results.ToArray();
-            Array.Sort(candidate_rankings, (v1,v2)=>v1.penalty.CompareTo(v2.penalty));
-            desired_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
-        }
+        // Get the penalties as a new array
+        candidate_rankings = direction_job.candidate_direction_results.ToArray();
+        Array.Sort(candidate_rankings, (v1,v2)=>v1.penalty.CompareTo(v2.penalty));
+        optimal_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
     }
 
     private void FixedUpdate() {
@@ -155,8 +165,8 @@ public class Pedestrian_Static : MonoBehaviour
         if (!initialized) return;
 
         // Rotate the agent to face the direction of the optimal velocity,. but only if the optimal velocity isn't Vector3.zero
-        Quaternion target_rotation = (desired_velocity != Vector3.zero) 
-            ? Quaternion.LookRotation(desired_velocity)
+        Quaternion target_rotation = (current_velocity != Vector3.zero) 
+            ? Quaternion.LookRotation(current_velocity)
             : Quaternion.LookRotation(diff_pos);
         float angle_difference = Quaternion.Angle(transform.rotation, target_rotation);
         float angular_step = angular_speed * Time.fixedDeltaTime;
@@ -165,22 +175,26 @@ public class Pedestrian_Static : MonoBehaviour
         else transform.rotation = Quaternion.RotateTowards(transform.rotation, target_rotation, angular_step);
 
         // Calcualte the difference between our current velocity and the optimal velocity
-        Vector3 diff = desired_velocity - current_velocity;
-
-        // As long as there is a different in the two velocities, we HAVE to translate.
-        if (diff.sqrMagnitude > 0f) {
+        Vector3 vel_diff = current_velocity - prev_current_velocity;
+        Vector3 translate_velocity;
+        if (vel_diff.sqrMagnitude > 0f) {
             // Calculate the step needed to add to the current velocity
-            Vector3 vel_step = diff.normalized * acceleration * Time.fixedDeltaTime;
+            Vector3 vel_step = vel_diff.normalized * acceleration * Time.fixedDeltaTime;
             // Increment current velocity based on velStep, except in the case that the velocity step overshoots the optimal velocity
-            if (vel_step.sqrMagnitude > diff.sqrMagnitude) current_velocity = desired_velocity;
-            else current_velocity += vel_step;
+            if (vel_step.sqrMagnitude > vel_diff.sqrMagnitude) translate_velocity = current_velocity;
+            else translate_velocity = prev_current_velocity + vel_step;
+        }
+        else {
+            translate_velocity = current_velocity;
         }
 
         // Translate the agent
-        transform.position += current_velocity * Time.fixedDeltaTime;
+        transform.position += translate_velocity * Time.fixedDeltaTime;
+        prev_current_velocity = translate_velocity;
     }
 
     private void OnDestroy() {
+        direction_job_handler.Complete();
         if (candidate_directions.IsCreated) candidate_directions.Dispose();
         if (candidate_direction_results.IsCreated) candidate_direction_results.Dispose();
         if (neighbors.IsCreated) neighbors.Dispose();
@@ -211,6 +225,67 @@ public class Pedestrian_Static : MonoBehaviour
         // Execute function. We're provided an index.
         // This index is the item index of candidate_directions and candidate_direction_results
         public void Execute(int index) {
+
+            // What's the direction we're checking now?
+            float2 candidate_direction = candidate_directions[index];
+            
+            // Every candidate direction comes with a cost of 0
+            float cost = 0f;
+
+            // We have to iterate through all neighbors
+            for(int i = 0; i < neighbors.Length; i++) {
+                GenerateAgents.AgentData other = neighbors[i];
+                if (agent_index == other.agent_index) continue; // Skip if ourselves
+
+                // Calculate translation of VB to VA. RVO-specific
+                float2 translate_VB_VA = position + 0.5f * (other.velocity - current_velocity);
+
+                // Calculate diff and its theta
+                float2 diff = candidate_direction + position - translate_VB_VA;
+                float theta_diff = math.atan2(diff[1], diff[0]);
+
+                // Calculate distance
+                float2 pos_diff = other.position - position;
+                float distance = math.length(pos_diff);
+                float minkowski_radius = radius + other.radius;
+                if (minkowski_radius > distance) distance = minkowski_radius;
+
+                // Calculate theta of BA
+                float theta_BA = math.atan2(pos_diff[1], pos_diff[0]);
+
+                // Calculate orthogonal of that_BA
+                float theta_BAort = math.asin(minkowski_radius / distance);
+
+                // Calculate angular bounds based on theta_BA and theta_BAort
+                float theta_left = theta_BA + theta_BAort;
+                float theta_right = theta_BA - theta_BAort;
+                
+                // We need to check if theta_diff is between theta_left and theta_right. If so, this is an unsuitable candidate
+                // In this case, we apply a max penalty of 1000
+                if (math.abs(theta_right - theta_left) <= math.PI) {
+                    if (theta_right <= theta_diff && theta_diff <= theta_left) cost = 1000f;
+                } else {
+                    // We need to consider the case where the signs of theta_left and theta_right are smaller than 0
+                    if (theta_left < 0f) theta_left += 2f * math.PI;
+                    if (theta_right < 0f) theta_right += 2f * math.PI;
+                    if (theta_diff < 0f) theta_diff += 2f * math.PI;
+
+                    if (theta_left < theta_right) {
+                        if (theta_left <= theta_diff && theta_diff <= theta_right) cost = 1000f;
+                    }
+                    else {
+                        if (theta_right <= theta_diff && theta_diff <= theta_left) cost = 1000f;
+                    }
+                }
+
+                // Determine the final penalty cost
+                cost = math.max(math.length(candidate_direction - desired_velocity), cost);
+            }
+
+            // output result
+            candidate_direction_results[index] = new CandidateDirection(index, cost);
+            
+            /*
             // Primers
             float2 candidate_direction = candidate_directions[index];
             float2 potential = (2f * candidate_direction) - current_velocity;
@@ -249,6 +324,7 @@ public class Pedestrian_Static : MonoBehaviour
             
             // Output penalty to results. Just make sure to not adjust the order in the CPU later.
             candidate_direction_results[index] = new CandidateDirection(index, base_penalty + penalty);
+            */
         }
     }
 }

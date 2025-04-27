@@ -111,6 +111,7 @@ public class GenerateAgents : MonoBehaviour
         // Update each agent's data
         // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
         for(int i = 0; i < agent_positions.Length; i++) {
+            agent_components[i].current_velocity = agent_components[i].velocity;
             agent_positions[i] = agent_components[i].position;
             agent_data[i].Update(agent_components[i].position, agent_components[i].velocity);
         }
@@ -149,12 +150,27 @@ public class GenerateAgents : MonoBehaviour
         return indices.Count > 0;
     }
 
-    public float2[] GenerateDirections(int n, float r) {
-        float2[] directions = new float2[n];
+    public List<float2> GenerateDirections(int n, float r) {
+        List<float2> directions = new List<float2>();
         float angleStep = 2f*Mathf.PI / n;
         for(int i = 0; i < n; i++) {
             float theta = i * angleStep;
-            directions[i] = new(r * Mathf.Sin(theta), r * Mathf.Cos(theta));
+            directions.Add(new(r * Mathf.Sin(theta), r * Mathf.Cos(theta)));
+        }
+        return directions;
+    }
+
+    public List<float2> GenerateDirections(int n, float min_r, float max_r, float r_iterstep = 0.1f) {
+        List<float2> directions = new List<float2>();
+        float angleStep = 2f*Mathf.PI / n;
+        for(int i = 0; i < n; i++) {
+            float theta = i * angleStep;
+            float x = Mathf.Sin(theta);
+            float y = Mathf.Cos(theta);
+            for (float r = min_r; r < max_r; r += r_iterstep) {
+                directions.Add(new(r * x, r * y));
+            }
+            directions.Add(new(max_r * x, max_r * y));
         }
         return directions;
     }
