@@ -36,7 +36,9 @@ public class Pedestrian : MonoBehaviour
     [HideInInspector] public int agent_index;
     public int num_candidate_directions = 32;
     public bool multi_speed_candidates = true;
+    public float min_speed = 0.5f;
     public float max_speed = 2.5f;
+    public float speed_step = 0.5f;
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
     [HideInInspector]   public Vector3 current_velocity;
@@ -49,9 +51,11 @@ public class Pedestrian : MonoBehaviour
     [HideInInspector]   public float radius => this.spatial_radius;
 
     [Header("=== Non-RVO ===")]
-    public bool draw_gizmos = false;
     public float acceleration = 1.5f;
     public float angular_speed = 60f;
+
+    [Header("=== Gizmos ===")]
+    public bool draw_gizmos = false;
 
     /* =========
     Jobification
@@ -91,7 +95,7 @@ public class Pedestrian : MonoBehaviour
 
         // Initialize candidate directions that can be jobified
         if (multi_speed_candidates) {
-            candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, 1f, max_speed, 0.5f);
+            candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, min_speed, max_speed, speed_step);
         } else {
             candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, max_speed);
         }
@@ -102,6 +106,9 @@ public class Pedestrian : MonoBehaviour
     private void Update() {
         Observation();
         Processing();
+    }
+    private void FixedUpdate() {
+        Movement();
     }
 
     private void Observation() {
@@ -161,10 +168,13 @@ public class Pedestrian : MonoBehaviour
         optimal_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
     }
 
-    private void FixedUpdate() {
+    private void Movement() {
         Vector3 diff_pos = destination - transform.position;
         initialized = diff_pos.magnitude > 0.1f;
-        if (!initialized) return;
+        if (!initialized) {
+            transform.position = destination;
+            return;
+        }
 
         // Rotate the agent to face the direction of the optimal velocity,. but only if the optimal velocity isn't Vector3.zero
         Quaternion target_rotation = (current_velocity != Vector3.zero) 
@@ -176,17 +186,21 @@ public class Pedestrian : MonoBehaviour
         if (angular_step > angle_difference) transform.rotation = target_rotation;
         else transform.rotation = Quaternion.RotateTowards(transform.rotation, target_rotation, angular_step);
 
-        // Calcualte the difference between our current velocity and the optimal velocity
-        Vector3 vel_diff = current_velocity - prev_current_velocity;
+        // Calculate the difference between our current velocity and the optimal velocity
         Vector3 translate_velocity;
-        if (vel_diff.sqrMagnitude > 0f) {
-            // Calculate the step needed to add to the current velocity
-            Vector3 vel_step = vel_diff.normalized * acceleration * Time.fixedDeltaTime;
-            // Increment current velocity based on velStep, except in the case that the velocity step overshoots the optimal velocity
-            if (vel_step.sqrMagnitude > vel_diff.sqrMagnitude) translate_velocity = current_velocity;
-            else translate_velocity = prev_current_velocity + vel_step;
-        }
-        else {
+        if (acceleration > 0f) {
+            Vector3 vel_diff = current_velocity - prev_current_velocity;
+            if (vel_diff.sqrMagnitude > 0f) {
+                // Calculate the step needed to add to the current velocity
+                Vector3 vel_step = vel_diff.normalized * acceleration * Time.fixedDeltaTime;
+                // Increment current velocity based on velStep, except in the case that the velocity step overshoots the optimal velocity
+                if (vel_step.sqrMagnitude > vel_diff.sqrMagnitude) translate_velocity = current_velocity;
+                else translate_velocity = prev_current_velocity + vel_step;
+            }
+            else {
+                translate_velocity = current_velocity;
+            }
+        } else {
             translate_velocity = current_velocity;
         }
 

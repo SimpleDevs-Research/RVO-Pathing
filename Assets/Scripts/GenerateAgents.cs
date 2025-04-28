@@ -45,6 +45,7 @@ public class GenerateAgents : MonoBehaviour
     [Tooltip("How many agents do you want?")]               public int num_agents = 50;
 
     [Header("=== Environment Setup ===")]
+    [Tooltip("The main camera")]                            public Camera scene_cam;
     [Tooltip("The environment bounds from origin")]         public Vector2 bounds = new Vector2(20f,20f);
     [Tooltip("Visualize the bounds via Gizmos")]            public Color bounds_color = Color.yellow;
     
@@ -70,6 +71,22 @@ public class GenerateAgents : MonoBehaviour
 
         // If the agent_parent is null, we set to ourselves
         if (agent_parent == null) agent_parent = this.transform;
+
+        // If camera is present, then prep it
+        if (scene_cam != null) {
+            Vector3 cam_pos = new Vector3(bounds.x/2f, 100f, bounds.y/2f);
+            float screen_ratio = (float)Screen.width / (float)Screen.height;
+            float target_ratio = bounds.x / bounds.y;
+            float ortho_size = (screen_ratio >= target_ratio) 
+                ? bounds.y / 2
+                : bounds.y / 2 * (target_ratio / screen_ratio);
+            
+            scene_cam.transform.position = cam_pos;
+            scene_cam.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.up);
+            scene_cam.orthographic = true;
+            scene_cam.orthographicSize = ortho_size;
+
+        }
 
         // We want to generate our agents
         Generate();

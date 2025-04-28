@@ -9,6 +9,7 @@ public class GenerateAgentsWithTrajectories : GenerateAgents
 {
     [System.Serializable]
     public class StartDestinationPair {
+        public string name;
         public Vector3 start;
         public Vector3 end;
         public Color color;
