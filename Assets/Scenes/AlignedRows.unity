@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agent_parent: {fileID: 95509513}
-  agent_prefab: {fileID: 854036602084019234, guid: 9337d5c8f875d4132b529eb44ee6b1ea, type: 3}
+  agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   num_agents: 18
   scene_cam: {fileID: 963194227}
   bounds: {x: 15, y: 8.5}
@@ -179,73 +179,73 @@ MonoBehaviour:
   draw_trajectory_gizmos: 1
   agent_trajectories:
   - name: L1
-    start: {x: 2.5, y: 0, z: 1}
-    end: {x: 12.5, y: 0, z: 1}
+    start: {x: 2.5, y: 0, z: 1.25}
+    end: {x: 12.5, y: 0, z: 1.25}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L2
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 12.5, y: 0, z: 2}
+    start: {x: 2.5, y: 0, z: 2.25}
+    end: {x: 12.5, y: 0, z: 2.25}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L3
-    start: {x: 2.5, y: 0, z: 3}
-    end: {x: 12.5, y: 0, z: 3}
+    start: {x: 2.5, y: 0, z: 3.25}
+    end: {x: 12.5, y: 0, z: 3.25}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L4
-    start: {x: 2.5, y: 0, z: 4}
-    end: {x: 12.5, y: 0, z: 4}
+    start: {x: 2.5, y: 0, z: 4.25}
+    end: {x: 12.5, y: 0, z: 4.25}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L5
-    start: {x: 2.5, y: 0, z: 5}
-    end: {x: 12.5, y: 0, z: 5}
+    start: {x: 2.5, y: 0, z: 5.25}
+    end: {x: 12.5, y: 0, z: 5.25}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L6
-    start: {x: 2.5, y: 0, z: 6}
-    end: {x: 12.5, y: 0, z: 6}
+    start: {x: 2.5, y: 0, z: 6.26}
+    end: {x: 12.5, y: 0, z: 6.26}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L7
-    start: {x: 2.5, y: 0, z: 7}
-    end: {x: 12.5, y: 0, z: 7}
+    start: {x: 2.5, y: 0, z: 7.25}
+    end: {x: 12.5, y: 0, z: 7.25}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: R1
-    start: {x: 12.5, y: 0, z: 1.5}
-    end: {x: 2.5, y: 0, z: 1.5}
+    start: {x: 12.5, y: 0, z: 1.25}
+    end: {x: 2.5, y: 0, z: 1.25}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R2
-    start: {x: 12.5, y: 0, z: 2.5}
-    end: {x: 2.5, y: 0, z: 2.5}
+    start: {x: 12.5, y: 0, z: 2.25}
+    end: {x: 2.5, y: 0, z: 2.25}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R3
-    start: {x: 12.5, y: 0, z: 3.5}
-    end: {x: 2.5, y: 0, z: 3.5}
+    start: {x: 12.5, y: 0, z: 3.25}
+    end: {x: 2.5, y: 0, z: 3.25}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R4
-    start: {x: 12.5, y: 0, z: 4.5}
-    end: {x: 2.5, y: 0, z: 4.5}
+    start: {x: 12.5, y: 0, z: 4.25}
+    end: {x: 2.5, y: 0, z: 4.25}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R5
-    start: {x: 12.5, y: 0, z: 5.5}
-    end: {x: 2.5, y: 0, z: 5.5}
+    start: {x: 12.5, y: 0, z: 5.25}
+    end: {x: 2.5, y: 0, z: 5.25}
     color: {r: 0.98039216, g: 0.18039216, b: 0.20392157, a: 1}
     points: []
   - name: 
-    start: {x: 12.5, y: 0, z: 6.5}
-    end: {x: 2.5, y: 0, z: 6.5}
+    start: {x: 12.5, y: 0, z: 6.26}
+    end: {x: 2.5, y: 0, z: 6.26}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: 
-    start: {x: 12.5, y: 0, z: 7.5}
-    end: {x: 2.5, y: 0, z: 7.5}
+    start: {x: 12.5, y: 0, z: 7.25}
+    end: {x: 2.5, y: 0, z: 7.25}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
 --- !u!1 &963194225

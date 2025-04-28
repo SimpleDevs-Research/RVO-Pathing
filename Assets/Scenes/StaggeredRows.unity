@@ -171,7 +171,7 @@ MonoBehaviour:
   agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   num_agents: 18
   scene_cam: {fileID: 963194227}
-  bounds: {x: 20, y: 10}
+  bounds: {x: 15, y: 8.5}
   bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   agent_positions: []
   agent_components: []
@@ -180,72 +180,72 @@ MonoBehaviour:
   agent_trajectories:
   - name: L1
     start: {x: 2.5, y: 0, z: 1}
-    end: {x: 17.5, y: 0, z: 1}
+    end: {x: 12.5, y: 0, z: 1}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L2
-    start: {x: 2.5, y: 0, z: 2.25}
-    end: {x: 17.5, y: 0, z: 2.25}
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 12.5, y: 0, z: 2}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L3
-    start: {x: 2.5, y: 0, z: 3.5}
-    end: {x: 17.5, y: 0, z: 3.5}
+    start: {x: 2.5, y: 0, z: 3}
+    end: {x: 12.5, y: 0, z: 3}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L4
-    start: {x: 2.5, y: 0, z: 4.75}
-    end: {x: 17.5, y: 0, z: 4.75}
+    start: {x: 2.5, y: 0, z: 4}
+    end: {x: 12.5, y: 0, z: 4}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L5
-    start: {x: 2.5, y: 0, z: 6}
-    end: {x: 17.5, y: 0, z: 6}
+    start: {x: 2.5, y: 0, z: 5}
+    end: {x: 12.5, y: 0, z: 5}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L6
-    start: {x: 2.5, y: 0, z: 7.25}
-    end: {x: 17.5, y: 0, z: 7.25}
+    start: {x: 2.5, y: 0, z: 6}
+    end: {x: 12.5, y: 0, z: 6}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: L7
-    start: {x: 2.5, y: 0, z: 8.5}
-    end: {x: 17.5, y: 0, z: 8.5}
+    start: {x: 2.5, y: 0, z: 7}
+    end: {x: 12.5, y: 0, z: 7}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: R1
-    start: {x: 17.5, y: 0, z: 9}
-    end: {x: 2.5, y: 0, z: 9}
+    start: {x: 12.5, y: 0, z: 1.5}
+    end: {x: 2.5, y: 0, z: 1.5}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R2
-    start: {x: 17.5, y: 0, z: 7.75}
-    end: {x: 2.5, y: 0, z: 7.75}
+    start: {x: 12.5, y: 0, z: 2.5}
+    end: {x: 2.5, y: 0, z: 2.5}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R3
-    start: {x: 17.5, y: 0, z: 6.5}
-    end: {x: 2.5, y: 0, z: 6.5}
+    start: {x: 12.5, y: 0, z: 3.5}
+    end: {x: 2.5, y: 0, z: 3.5}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R4
-    start: {x: 17.5, y: 0, z: 5.25}
-    end: {x: 2.5, y: 0, z: 5.25}
+    start: {x: 12.5, y: 0, z: 4.5}
+    end: {x: 2.5, y: 0, z: 4.5}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
   - name: R5
-    start: {x: 17.5, y: 0, z: 4}
-    end: {x: 2.5, y: 0, z: 4}
+    start: {x: 12.5, y: 0, z: 5.5}
+    end: {x: 2.5, y: 0, z: 5.5}
+    color: {r: 0.98039216, g: 0.18039216, b: 0.20392157, a: 1}
+    points: []
+  - name: 
+    start: {x: 12.5, y: 0, z: 6.5}
+    end: {x: 2.5, y: 0, z: 6.5}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
-  - name: R6
-    start: {x: 17.5, y: 0, z: 2.75}
-    end: {x: 2.5, y: 0, z: 2.75}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
-    points: []
-  - name: R7
-    start: {x: 17.5, y: 0, z: 1.5}
-    end: {x: 2.5, y: 0, z: 1.5}
+  - name: 
+    start: {x: 12.5, y: 0, z: 7.5}
+    end: {x: 2.5, y: 0, z: 7.5}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
     points: []
 --- !u!1 &963194225
