@@ -38,9 +38,12 @@ public class TestTwo : GenerateAgents
     #endif
 
     public override void Generate() {
+        // In this one, the number of agents is equal to the number of stored trajectories
+        num_agents = agent_trajectories.Length;
+        
         // Initialize the lists for KDTree
         agent_positions = new Vector3[num_agents];
-        agent_components = new Pedestrian_Static[num_agents];
+        agent_components = new Pedestrian[num_agents];
         agent_data = new AgentData[num_agents];
 
         // Generate each agent individually
@@ -53,7 +56,7 @@ public class TestTwo : GenerateAgents
             Vector3 end_point = sdp.end;
             
             // Instantiate agent. If the agent wants to move themselves, then we leave it up to the agent prefab instance itself.
-            Pedestrian_Static ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Pedestrian_Static;
+            Pedestrian ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Pedestrian;
             ps.transform.parent = agent_parent;
             ps.agent_index = i;
             ps.gameObject.name = $"Agent {i}";
@@ -78,9 +81,10 @@ public class TestTwo : GenerateAgents
         // Update each agent's data
         // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
         for(int i = 0; i < agent_positions.Length; i++) {
+            agent_components[i].current_velocity = agent_components[i].velocity;
             agent_positions[i] = agent_components[i].position;
             agent_data[i].Update(agent_components[i].position, agent_components[i].velocity);
-            agent_trajectories[i].points.Add(agent_positions[i]);
+            if (agent_components[i].initialized) agent_trajectories[i].points.Add(new Vector3(agent_positions[i].x, agent_components[i].current_velocity.magnitude, agent_positions[i].z));
         }
 
         // We update the KDTree here and now

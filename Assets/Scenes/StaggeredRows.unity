@@ -132,34 +132,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 95509513}
-  - component: {fileID: 95509512}
+  - component: {fileID: 95509514}
   m_Layer: 0
-  m_Name: GenerateAgents
+  m_Name: Generate Agents With Trajectories
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &95509512
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 95509511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 81f4d4230bbc0425182e4630c0ee6f7c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agent_parent: {fileID: 95509513}
-  agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
-  num_agents: 200
-  bounds: {x: 20, y: 20}
-  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  agent_positions: []
-  agent_components: []
-  agent_data: []
 --- !u!4 &95509513
 Transform:
   m_ObjectHideFlags: 0
@@ -175,6 +155,83 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &95509514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 95509511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc6210452b765d47bdfc887b093d54c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agent_parent: {fileID: 95509513}
+  agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
+  num_agents: 18
+  bounds: {x: 20, y: 10}
+  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  agent_positions: []
+  agent_components: []
+  agent_data: []
+  agent_trajectories:
+  - start: {x: 2.5, y: 0, z: 0.75}
+    end: {x: 17.5, y: 0, z: 0.75}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - start: {x: 2.5, y: 0, z: 3.25}
+    end: {x: 17.5, y: 0, z: 3.25}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - start: {x: 2.5, y: 0, z: 4.5}
+    end: {x: 17.5, y: 0, z: 4.5}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - start: {x: 2.5, y: 0, z: 5.75}
+    end: {x: 17.5, y: 0, z: 5.75}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - start: {x: 2.5, y: 0, z: 7}
+    end: {x: 17.5, y: 0, z: 7}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - start: {x: 2.5, y: 0, z: 8.25}
+    end: {x: 17.5, y: 0, z: 8.25}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - start: {x: 17.5, y: 0, z: 1.75}
+    end: {x: 2.5, y: 0, z: 1.75}
+    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    points: []
+  - start: {x: 17.5, y: 0, z: 3}
+    end: {x: 2.5, y: 0, z: 3}
+    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    points: []
+  - start: {x: 17.5, y: 0, z: 4.25}
+    end: {x: 2.5, y: 0, z: 4.25}
+    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    points: []
+  - start: {x: 17.5, y: 0, z: 5.5}
+    end: {x: 2.5, y: 0, z: 5.5}
+    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    points: []
+  - start: {x: 17.5, y: 0, z: 6.75}
+    end: {x: 2.5, y: 0, z: 6.75}
+    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    points: []
+  - start: {x: 17.5, y: 0, z: 8}
+    end: {x: 2.5, y: 0, z: 8}
+    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    points: []
+  - start: {x: 17.5, y: 0, z: 9.25}
+    end: {x: 2.5, y: 0, z: 9.25}
+    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    points: []
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -235,8 +292,8 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 1
-  orthographic size: 10
+  orthographic: 0
+  orthographic size: 5
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -260,13 +317,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 10, y: 10, z: 10}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

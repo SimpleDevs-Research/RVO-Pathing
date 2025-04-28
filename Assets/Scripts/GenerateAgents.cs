@@ -41,7 +41,7 @@ public class GenerateAgents : MonoBehaviour
 
     [Header("=== Agent Setup ===")]
     [Tooltip("The Transform parent of all agents")]         public Transform agent_parent;
-    [Tooltip("The agent prefab that should be spawned")]    public Pedestrian_Static agent_prefab;
+    [Tooltip("The agent prefab that should be spawned")]    public Pedestrian agent_prefab;
     [Tooltip("How many agents do you want?")]               public int num_agents = 50;
 
     [Header("=== Environment Setup ===")]
@@ -50,7 +50,7 @@ public class GenerateAgents : MonoBehaviour
     
     [Space]
     [HideInInspector] public Vector3[] agent_positions;
-    [HideInInspector] public Pedestrian_Static[] agent_components;
+    [HideInInspector] public Pedestrian[] agent_components;
     [HideInInspector] public AgentData[] agent_data;
     [HideInInspector] public Dictionary<GameObject, int> agent_index_map;
     protected KDTree tree;
@@ -78,7 +78,7 @@ public class GenerateAgents : MonoBehaviour
     public virtual void Generate() {
         // Initialize the lists for KDTree
         agent_positions = new Vector3[num_agents];
-        agent_components = new Pedestrian_Static[num_agents];
+        agent_components = new Pedestrian[num_agents];
         agent_data = new AgentData[num_agents];
 
         // Generate each agent individually
@@ -88,7 +88,7 @@ public class GenerateAgents : MonoBehaviour
             Vector3 start_point = GetRandomPointInBounds();
             
             // Instantiate agent. If the agent wants to move themselves, then we leave it up to the agent prefab instance itself.
-            Pedestrian_Static ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Pedestrian_Static;
+            Pedestrian ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Pedestrian;
             ps.transform.parent = agent_parent;
             ps.agent_index = i;
             ps.gameObject.name = $"Agent {i}";
