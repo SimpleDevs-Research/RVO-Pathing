@@ -27,13 +27,10 @@ public class Pedestrian : MonoBehaviour
     [Header("=== Agent Settings ===")]
     public bool generate_destination_on_start = true;
     public Vector3 destination;
-    public bool initialized = false;
-
-    [Header("=== Neighbor Querying ===")]
-    public float angle_threshold = 60f;
+    public bool reached_destination = false;
 
     [Header("=== RVO ===")]
-    [HideInInspector] public int agent_index;
+    public int agent_index;
     public int num_candidate_directions = 32;
     public bool multi_speed_candidates = true;
     public float min_speed = 0.5f;
@@ -51,6 +48,7 @@ public class Pedestrian : MonoBehaviour
     [HideInInspector]   public float radius => this.spatial_radius;
 
     [Header("=== Non-RVO ===")]
+    public bool simulate_vision = true;
     public float acceleration = 1.5f;
     public float angular_speed = 60f;
 
@@ -64,6 +62,7 @@ public class Pedestrian : MonoBehaviour
     private NativeArray<float2> candidate_directions;
     private NativeArray<CandidateDirection> candidate_direction_results;
     private NativeArray<GenerateAgents.AgentData> neighbors;
+    public int num_detected_neighbors = 0;
     private DirectionJob direction_job;
     private JobHandle direction_job_handler;
     private CandidateDirection[] candidate_rankings;
@@ -119,6 +118,11 @@ public class Pedestrian : MonoBehaviour
         List<GenerateAgents.AgentData> neighbor_data = new List<GenerateAgents.AgentData>();
         for(int i = 0; i < result_indices.Count; i++) {
             GenerateAgents.AgentData other = GenerateAgents.current.agent_data[result_indices[i]];
+            if (agent_index == other.agent_index) continue;
+            if (!simulate_vision) {
+                neighbor_data.Add(other);
+                continue;
+            }
             Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
             Vector2Int b = new Vector2Int(Mathf.RoundToInt((other.position[0] - transform.position.x)*10), Mathf.RoundToInt((other.position[1] - transform.position.z) * 10));
             int dot = a.x * b.x + a.y * b.y;
@@ -129,6 +133,7 @@ public class Pedestrian : MonoBehaviour
 
         // Updating our neighbor_indices nativearray
         neighbors = new NativeArray<GenerateAgents.AgentData>(neighbor_data.ToArray(), Allocator.Persistent);
+        num_detected_neighbors = neighbor_data.Count;
     }
 
     private void Processing() {
@@ -170,8 +175,8 @@ public class Pedestrian : MonoBehaviour
 
     private void Movement() {
         Vector3 diff_pos = destination - transform.position;
-        initialized = diff_pos.magnitude > 0.1f;
-        if (!initialized) {
+        reached_destination = diff_pos.magnitude > 0.1f;
+        if (!reached_destination) {
             transform.position = destination;
             return;
         }
@@ -232,7 +237,7 @@ public class Pedestrian : MonoBehaviour
         [ReadOnly] public float2 position;  // 2D position in world space
         [ReadOnly] public float2 current_velocity;  // Thecurrent 2D velocity in world space
         [ReadOnly] public float2 desired_velocity;  // The desired velocity this agent wants to move towards
-        [ReadOnly] public float radius;     // Radius of this agent
+        [ReadOnly] public float radius;         // Radius of this agent
         // Outputs
         [WriteOnly] public NativeArray<CandidateDirection> candidate_direction_results;
 
@@ -249,7 +254,7 @@ public class Pedestrian : MonoBehaviour
             // We have to iterate through all neighbors
             for(int i = 0; i < neighbors.Length; i++) {
                 GenerateAgents.AgentData other = neighbors[i];
-                if (agent_index == other.agent_index) continue; // Skip if ourselves
+                if (agent_index == other.agent_index) continue; // Skip if ourselves                
 
                 // Calculate translation of VB to VA. RVO-specific
                 float2 translate_VB_VA = position + 0.5f * (other.velocity - current_velocity);

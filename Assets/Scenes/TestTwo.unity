@@ -178,12 +178,12 @@ MonoBehaviour:
   agent_data: []
   draw_trajectory_gizmos: 1
   agent_trajectories:
-  - name: 
+  - name: L1
     start: {x: 2.5, y: 0, z: 2.5}
     end: {x: 17.5, y: 0, z: 2.5}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
-  - name: 
+  - name: R1
     start: {x: 17.5, y: 0, z: 2.5}
     end: {x: 2.5, y: 0, z: 2.5}
     color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}

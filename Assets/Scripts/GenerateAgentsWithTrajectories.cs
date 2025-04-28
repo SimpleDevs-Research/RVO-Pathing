@@ -89,7 +89,7 @@ public class GenerateAgentsWithTrajectories : GenerateAgents
             agent_components[i].current_velocity = agent_components[i].velocity;
             agent_positions[i] = agent_components[i].position;
             agent_data[i].Update(agent_components[i].position, agent_components[i].velocity);
-            if (agent_components[i].initialized) agent_trajectories[i].points.Add(new Vector3(agent_positions[i].x, agent_components[i].current_velocity.magnitude, agent_positions[i].z));
+            if (agent_components[i].reached_destination) agent_trajectories[i].points.Add(new Vector3(agent_positions[i].x, agent_components[i].current_velocity.magnitude, agent_positions[i].z));
         }
 
         // We update the KDTree here and now
