@@ -175,6 +175,7 @@ MonoBehaviour:
   agent_positions: []
   agent_components: []
   agent_data: []
+  draw_trajectory_gizmos: 1
   agent_trajectories:
   - start: {x: 2.5, y: 0, z: 0.75}
     end: {x: 17.5, y: 0, z: 0.75}

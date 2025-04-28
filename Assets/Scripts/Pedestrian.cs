@@ -35,6 +35,7 @@ public class Pedestrian : MonoBehaviour
     [Header("=== RVO ===")]
     [HideInInspector] public int agent_index;
     public int num_candidate_directions = 32;
+    public bool multi_speed_candidates = true;
     public float max_speed = 2.5f;
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
@@ -89,8 +90,11 @@ public class Pedestrian : MonoBehaviour
             this.destination = (GenerateAgents.current != null) ? GenerateAgents.current.GetRandomPointInBounds() : transform.position;
 
         // Initialize candidate directions that can be jobified
-        candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, 1f, max_speed, 0.5f);
-        //candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, max_speed);
+        if (multi_speed_candidates) {
+            candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, 1f, max_speed, 0.5f);
+        } else {
+            candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, max_speed);
+        }
         candidate_directions = new NativeArray<float2>(candidate_directions_template.Count+1, Allocator.Persistent);
         candidate_direction_results = new NativeArray<CandidateDirection>(candidate_directions_template.Count+1, Allocator.Persistent);
     }

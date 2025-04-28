@@ -5,7 +5,7 @@ using UnityEngine;
 using DataStructures.ViliWonka.KDTree;
 
 
-public class TestTwo : GenerateAgents
+public class GenerateAgentsWithTrajectories : GenerateAgents
 {
     [System.Serializable]
     public class StartDestinationPair {
@@ -15,22 +15,26 @@ public class TestTwo : GenerateAgents
         public List<Vector3> points = new List<Vector3>();
     }
 
+    public bool draw_trajectory_gizmos = false;
     public StartDestinationPair[] agent_trajectories;
 
     #if UNITY_EDITOR
     protected override void OnDrawGizmos() {
         base.OnDrawGizmos();
-        
+        if (!draw_trajectory_gizmos) return;
+
         for (int i = 0; i < agent_trajectories.Length; i++) {
             StartDestinationPair sdp = agent_trajectories[i];
             Gizmos.color = sdp.color;
-            //Gizmos.DrawSphere(sdp.start, 1f);
-            //Gizmos.DrawWireSphere(sdp.end, 1f);
-            //Gizmos.DrawLine(sdp.start, sdp.end);
-
-            if (sdp.points.Count >= 2) {
-                for(int j = 0; j < sdp.points.Count-1; j++) {
-                    Gizmos.DrawLine(sdp.points[j], sdp.points[j+1]);
+            if (!Application.isPlaying) {
+                Gizmos.DrawSphere(sdp.start, 0.25f);
+                Gizmos.DrawWireSphere(sdp.end, 0.25f);
+                Gizmos.DrawLine(sdp.start, sdp.end);
+            } else {
+                if (sdp.points.Count >= 2) {
+                    for(int j = 0; j < sdp.points.Count-1; j++) {
+                        Gizmos.DrawLine(sdp.points[j], sdp.points[j+1]);
+                    }
                 }
             }
         }

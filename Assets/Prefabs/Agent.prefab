@@ -51,6 +51,7 @@ MonoBehaviour:
   angle_threshold: 90
   agent_index: 0
   num_candidate_directions: 128
+  multi_speed_candidates: 0
   max_speed: 2
   visual_radius: 3
   spatial_radius: 0.5
