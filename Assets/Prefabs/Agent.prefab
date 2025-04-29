@@ -147,5 +147,5 @@ MonoBehaviour:
   simulate_vision: 0
   acceleration: 2
   angular_speed: 60
-  draw_gizmos: 1
+  draw_gizmos: 0
   num_detected_neighbors: 0
