@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Burst;
+using DataStructures.ViliWonka.KDTree;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -27,7 +28,6 @@ public class Pedestrian : MonoBehaviour
     [Header("=== Agent Settings ===")]
     public bool generate_destination_on_start = true;
     public Vector3 destination;
-    public bool reached_destination = false;
 
     [Header("=== RVO ===")]
     public int agent_index;
@@ -55,6 +55,10 @@ public class Pedestrian : MonoBehaviour
     [Header("=== Gizmos ===")]
     public bool draw_gizmos = false;
 
+    [Header("=== Read-Only Data ===")]
+    public bool reached_destination = false;
+    public int num_neighbors = 0;
+
     /* =========
     Jobification
     ========= */
@@ -62,7 +66,6 @@ public class Pedestrian : MonoBehaviour
     private NativeArray<float2> candidate_directions;
     private NativeArray<CandidateDirection> candidate_direction_results;
     private NativeArray<GenerateAgents.AgentData> neighbors;
-    public int num_detected_neighbors = 0;
     private DirectionJob direction_job;
     private JobHandle direction_job_handler;
     private CandidateDirection[] candidate_rankings;
@@ -111,16 +114,17 @@ public class Pedestrian : MonoBehaviour
     }
 
     private void Observation() {
-        // KDTree Query
-        List<int> result_indices = new List<int>();
-        GenerateAgents.current.QueryRadius(transform.position, 5f, ref result_indices);
+        // KDTree Query using radial sort. Results should output DistanceResults, which is a custom class outputted by KDQuery.
+        List<KDQuery.DistanceResult<GenerateAgents.AgentData>> results = new List<KDQuery.DistanceResult<GenerateAgents.AgentData>>();
+        GenerateAgents.current.QueryRadiusSort(transform.position, 5f, ref results);
 
         List<GenerateAgents.AgentData> neighbor_data = new List<GenerateAgents.AgentData>();
-        for(int i = 0; i < result_indices.Count; i++) {
-            GenerateAgents.AgentData other = GenerateAgents.current.agent_data[result_indices[i]];
+        foreach(KDQuery.DistanceResult<GenerateAgents.AgentData> result in results) {
+            GenerateAgents.AgentData other = result.data;
             if (agent_index == other.agent_index) continue;
             if (!simulate_vision) {
                 neighbor_data.Add(other);
+                if (neighbor_data.Count >= 8) break;    // end early if we've achieved 8 closest visible people.
                 continue;
             }
             Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
@@ -128,17 +132,19 @@ public class Pedestrian : MonoBehaviour
             int dot = a.x * b.x + a.y * b.y;
             if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
                 neighbor_data.Add(other);
+                if (neighbor_data.Count >= 8) break;    // end early if we've achieved 8 closest visible people.
             }
         }
 
         // Updating our neighbor_indices nativearray
         neighbors = new NativeArray<GenerateAgents.AgentData>(neighbor_data.ToArray(), Allocator.Persistent);
-        num_detected_neighbors = neighbor_data.Count;
+        num_neighbors = neighbor_data.Count;
     }
 
     private void Processing() {
         // Designate the desired direction and velocity
-        desired_direction = (destination - transform.position).normalized;
+        Vector3 dest_diff = destination - transform.position;
+        desired_direction = dest_diff.normalized;
         desired_velocity = desired_direction * max_speed;
         optimal_velocity = desired_velocity;
 

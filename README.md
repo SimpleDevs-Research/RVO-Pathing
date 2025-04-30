@@ -46,7 +46,7 @@ Follow these instructions:
 
 Reciprocal Velocity Obstacles (RVO) [[1](https://doi.org/10.1109/ROBOT.2008.4543489)] is largely built off  Fiorini and Shiller's "Velocity Obstacles" concept [[2](https://doi.org/10.1177/027836499801700706)]. In basic terms, imagine if you are walking down the street and you see another person coming towards you from the opposite end of the sidewalk. During that moment, you must make a decision on which direction to move towards, in order to avoid colliding with them. A Velocity Obstacle (VO) is a geometric version of that decision, represented usually as a triangular cone starting from yourself towards that other person. Any velocities you choose that end up landing you inside that VO will inevitably lead you to collide with the other person. So in the traditional VO sense, all you have to do is choose a velocity that is outside the VO, and you're guaranteed to avoid hitting that other person.
 
-### Why RVO and not VO's?
+### What's wrong with the VO method?
 
 In practice, VO's apparently don't work very well. What ends up happening is that maybe in the first frame, two agents heading towards each other will chose to maneuver out of the way of each other in that frame, then they move accordingly (i.e. both agents move left relative to their current heading, thus beginning a synchronous rotation around each other). However, in the next frame, the two agents will then move towards their original heading, which forces them in the next frame to readjust again. In short, you see a kind of "staggering" motion where the collision avoidance trajectory ends up looking like a a bunch of squigglies. Not the smoothest approach. [[3](https://www.taylorfrancis.com/chapters/edit/10.1201/9780429055096-22/rvo-orca-ben-sunshine-hill)]
 
@@ -68,12 +68,10 @@ This is why in practice, RVO is sufficiently suitable for basic local collision 
 
 You'd want to look at other methods such as van den Berg's "Optimal Reciprocal Collision Avoidance" (ORCA, otherwise known as RVO2) [[4](https://doi.org/10.1007/978-3-642-19457-3_1)] and Hybrid RVO (HRVO) [[5](https://doi.org/10.1109/TRO.2011.2120810)]. However, this repository doesn't explore these fully as RVO is sufficient for our needs.
 
-## Is RVO... Sufficient for Human-Like Behavior?
+## How does this version of RVO work?
 
-Good question. There's [this report](https://doi.org/10.1109/IROS.2013.6696726) that talks about RVO variants (ORCA, HRVO, and other variations) in comparison with human behavior, but that doesn't consider raw RVO. We also don't really care about those that propose new updated versions such as [this report](https://doi.org/10.1109/ICRA.2016.7487147), though it would be interesting to look at these in a different project.
+Inside of `Assets/Docs/`, you will find smaller documents that detail the following:
 
-Here are some interesting papers I've searched for:
-
-* [this ArXiv report](https://doi.org/10.48550/arXiv.2006.14195) touches not just VOs but also other pathfinding algorithms and such.
-* 
+* `Assets/Docs/About.md`: Defines RVO and explains the nuances of its application in simulation/games.
+* `Assets/Docs/Implementation.md`: Describes the RVO implementation for this project.
 

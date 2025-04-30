@@ -161,6 +161,11 @@ public class GenerateAgents : MonoBehaviour
         query.Radius(tree, query_position, r, indices);
         return indices.Count > 0;
     }
+    public bool QueryRadiusSort(Vector3 query_position, float r, ref List<KDQuery.DistanceResult<AgentData>> results) {
+        results = new List<KDQuery.DistanceResult<AgentData>>();
+        query.RadiusSort<AgentData>(tree, query_position, r, results, agent_data);
+        return results.Count > 0;
+    }
     public bool QueryInterval(Vector3 query_position, Vector3 interval, ref List<int> indices) {
         indices = new List<int>();
         query.Interval(tree, query_position - interval/2f, query_position + interval/2f, indices);
