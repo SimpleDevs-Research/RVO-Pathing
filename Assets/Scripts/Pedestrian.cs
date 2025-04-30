@@ -153,25 +153,28 @@ public class Pedestrian : MonoBehaviour
 
         // Update candidate directions with the current desired velocity
         for (int i = 0; i < candidate_directions_template.Count; i++) {
-                candidate_directions[i] = candidate_directions_template[i];
-                candidate_direction_results[i] = new CandidateDirection(i);
-            }
-            candidate_directions[candidate_directions_template.Count] = (float2)desired_velocity.ToVector2();
-            candidate_direction_results[candidate_directions_template.Count] = new CandidateDirection(candidate_directions_template.Count);
-            // Initialize the job
-            direction_job = new DirectionJob() {
-                candidate_directions = candidate_directions,
-                neighbors = neighbors,
-                agent_index = agent_index,
-                position = (float2)transform.position.ToVector2(),
-                current_velocity = (float2)current_velocity.ToVector2(),
-                desired_velocity = (float2)desired_velocity.ToVector2(),
-                radius = spatial_radius,
-                candidate_direction_results = candidate_direction_results
-            };
+            candidate_directions[i] = candidate_directions_template[i];
+            candidate_direction_results[i] = new CandidateDirection(i);
+        }
+        candidate_directions[candidate_directions_template.Count] = (float2)desired_velocity.ToVector2();
+        candidate_direction_results[candidate_directions_template.Count] = new CandidateDirection(candidate_directions_template.Count);
+        // Initialize the job
+        direction_job = new DirectionJob() {
+            candidate_directions = candidate_directions,
+            neighbors = neighbors,
+            agent_index = agent_index,
+            position = (float2)transform.position.ToVector2(),
+            current_velocity = (float2)current_velocity.ToVector2(),
+            desired_velocity = (float2)desired_velocity.ToVector2(),
+            radius = spatial_radius,
+            candidate_direction_results = candidate_direction_results
+        };
+        /*
         direction_job_handler = direction_job.Schedule(candidate_directions_template.Count+1, 128);
         JobHandle.ScheduleBatchedJobs();
         direction_job_handler.Complete();
+        */
+        direction_job.Run(candidate_directions.Length);
 
         // Get the penalties as a new array
         candidate_rankings = direction_job.candidate_direction_results.ToArray();

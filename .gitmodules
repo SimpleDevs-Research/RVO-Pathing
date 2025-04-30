@@ -1,0 +1,6 @@
+[submodule "Assets/Unity-KDTree"]
+	path = Assets/Unity-KDTree
+	url = git@github.com:SimpleDevs-Tools/Unity-KDTree.git
+[submodule "Assets/UnityUtils"]
+	path = Assets/UnityUtils
+	url = git@github.com:SimpleDevs-Tools/UnityUtils.git
