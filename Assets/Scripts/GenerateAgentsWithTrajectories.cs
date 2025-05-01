@@ -49,7 +49,7 @@ public class GenerateAgentsWithTrajectories : GenerateAgents
         
         // Initialize the lists for KDTree
         agent_positions = new Vector3[num_agents];
-        agent_components = new Pedestrian[num_agents];
+        agent_components = new Agent[num_agents];
         agent_data = new AgentData[num_agents];
 
         // Generate each agent individually
@@ -62,14 +62,14 @@ public class GenerateAgentsWithTrajectories : GenerateAgents
             Vector3 end_point = sdp.end;
             
             // Instantiate agent. If the agent wants to move themselves, then we leave it up to the agent prefab instance itself.
-            Pedestrian ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Pedestrian;
+            Agent ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Agent;
             ps.transform.parent = agent_parent;
             ps.agent_index = i;
             ps.gameObject.name = $"Agent {i}";
             ps.generate_destination_on_start = false;
-            ps.destination = end_point;
+            ps.SetDestination(end_point);
 
-            // Initialize pedestrian data
+            // Initialize Agent data
             AgentData ped = new AgentData(i, start_point, Vector3.zero, ps.spatial_radius);
 
             // Add to agent_positions and agent_data
@@ -92,7 +92,7 @@ public class GenerateAgentsWithTrajectories : GenerateAgents
         // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
         for(int i = 0; i < agent_positions.Length; i++) {
 
-            // update the current velocity of agents HERE, in order to properly update current velocity equally across all pedestrians
+            // update the current velocity of agents HERE, in order to properly update current velocity equally across all Agents
             agent_components[i].current_velocity = agent_components[i].velocity;
 
             // Update our data

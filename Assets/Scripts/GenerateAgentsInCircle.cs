@@ -17,7 +17,7 @@ public class GenerateAgentsInCircle: GenerateAgentsWithTrajectories
         
         // Initialize the lists for KDTree
         agent_positions = new Vector3[num_agents];
-        agent_components = new Pedestrian[num_agents];
+        agent_components = new Agent[num_agents];
         agent_data = new AgentData[num_agents];
 
         // Want to build a ciruclar arrangement here
@@ -36,14 +36,14 @@ public class GenerateAgentsInCircle: GenerateAgentsWithTrajectories
             Vector3 end_point = arrangement_centroid - arr_direction;
             
             // Instantiate agent. If the agent wants to move themselves, then we leave it up to the agent prefab instance itself.
-            Pedestrian ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Pedestrian;
+            Agent ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Agent;
             ps.transform.parent = agent_parent;
             ps.agent_index = i;
             ps.gameObject.name = $"Agent {i}";
             ps.generate_destination_on_start = false;
-            ps.destination = end_point;
+            ps.SetDestination(end_point);
 
-            // Initialize pedestrian data
+            // Initialize Agent data
             AgentData ped = new AgentData(i, start_point, Vector3.zero, ps.spatial_radius);
 
             // Add to agent_positions and agent_data

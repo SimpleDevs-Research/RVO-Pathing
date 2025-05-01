@@ -13,7 +13,7 @@ using DataStructures.ViliWonka.KDTree;
 using UnityEditor;
 #endif
 
-public class Pedestrian : MonoBehaviour
+public class Agent : MonoBehaviour
 {
     [System.Serializable]
     public struct CandidateDirection {
@@ -38,6 +38,7 @@ public class Pedestrian : MonoBehaviour
     public float speed_step = 0.5f;
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
+    public float stopping_distance = 0.05f;
     [HideInInspector]   public Vector3 current_velocity;
     [HideInInspector]   public Vector3 desired_direction; // normalized
     [HideInInspector]   public Vector3 desired_velocity;
@@ -56,6 +57,7 @@ public class Pedestrian : MonoBehaviour
     public bool draw_gizmos = false;
 
     [Header("=== Read-Only Data ===")]
+    public float distance_to_destination = 0f;
     public bool reached_destination = false;
     public int num_neighbors = 0;
     public int num_directions = 0;
@@ -72,7 +74,7 @@ public class Pedestrian : MonoBehaviour
     private CandidateDirection[] candidate_rankings;
 
     #if UNITY_EDITOR
-    void OnDrawGizmos() {
+    protected virtual void OnDrawGizmos() {
         // Return early if not even playing or if we disabled gizmos
         if (!draw_gizmos || !Application.isPlaying) return;
 
@@ -91,7 +93,7 @@ public class Pedestrian : MonoBehaviour
     }
     #endif
 
-    private void Start() {
+    protected virtual void Start() {
         // Confirm destination
         if (generate_destination_on_start) 
             this.destination = (GenerateAgents.current != null) ? GenerateAgents.current.GetRandomPointInBounds() : transform.position;
@@ -107,15 +109,15 @@ public class Pedestrian : MonoBehaviour
         candidate_direction_results = new NativeArray<CandidateDirection>(num_directions, Allocator.Persistent);
     }
 
-    private void Update() {
+    protected virtual void Update() {
         Observation();
         Processing();
     }
-    private void FixedUpdate() {
+    protected virtual void FixedUpdate() {
         Movement();
     }
 
-    private void Observation() {
+    protected virtual void Observation() {
         // KDTree Query using radial sort. Results should output DistanceResults, which is a custom class outputted by KDQuery.
         List<KDQuery.DistanceResult<GenerateAgents.AgentData>> results = new List<KDQuery.DistanceResult<GenerateAgents.AgentData>>();
         GenerateAgents.current.QueryRadiusSort(transform.position, 5f, ref results);
@@ -143,7 +145,7 @@ public class Pedestrian : MonoBehaviour
         num_neighbors = neighbor_data.Count;
     }
 
-    private void Processing() {
+    protected virtual void Processing() {
         // Designate the desired direction and velocity
         Vector3 dest_diff = destination - transform.position;
         desired_direction = dest_diff.normalized;
@@ -184,9 +186,10 @@ public class Pedestrian : MonoBehaviour
         optimal_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
     }
 
-    private void Movement() {
+    protected virtual void Movement() {
         Vector3 diff_pos = destination - transform.position;
-        reached_destination = diff_pos.magnitude <= 0.05f;
+        distance_to_destination = diff_pos.magnitude;
+        reached_destination = distance_to_destination <= stopping_distance;
         if (reached_destination) {
             transform.position = destination;
             return;
@@ -225,11 +228,15 @@ public class Pedestrian : MonoBehaviour
         prev_current_velocity = translate_velocity;
     }
 
-    private void OnDestroy() {
+    protected virtual void OnDestroy() {
         direction_job_handler.Complete();
         if (candidate_directions.IsCreated) candidate_directions.Dispose();
         if (candidate_direction_results.IsCreated) candidate_direction_results.Dispose();
         if (neighbors.IsCreated) neighbors.Dispose();
+    }
+
+    public virtual void SetDestination(Vector3 d) {
+        this.destination = d;
     }
 
 
@@ -289,11 +296,15 @@ public class Pedestrian : MonoBehaviour
                 // Calculate angular bounds based on theta_BA and theta_BAort
                 float theta_left = theta_BA + theta_BAort;
                 float theta_right = theta_BA - theta_BAort;
+
+                // Calculate some penalty values. By default, the penalty is the distance between the desired velocity and canidate
+                float penalty = math.length(candidate_direction - desired_velocity);
+                float distance_cost = 10f / distance;
                 
                 // We need to check if theta_diff is between theta_left and theta_right. If so, this is an unsuitable candidate
                 // In this case, we apply a max penalty of 1000
                 if (math.abs(theta_right - theta_left) <= math.PI) {
-                    if (theta_right <= theta_diff && theta_diff <= theta_left) cost = 1000f;
+                    if (theta_right <= theta_diff && theta_diff <= theta_left) penalty += distance_cost;
                 } else {
                     // We need to consider the case where the signs of theta_left and theta_right are smaller than 0
                     if (theta_left < 0f) theta_left += 2f * math.PI;
@@ -301,61 +312,20 @@ public class Pedestrian : MonoBehaviour
                     if (theta_diff < 0f) theta_diff += 2f * math.PI;
 
                     if (theta_left < theta_right) {
-                        if (theta_left <= theta_diff && theta_diff <= theta_right) cost = 100f;
+                        if (theta_left <= theta_diff && theta_diff <= theta_right) penalty += distance_cost;
                     }
                     else {
-                        if (theta_right <= theta_diff && theta_diff <= theta_left) cost = 100f;
+                        if (theta_right <= theta_diff && theta_diff <= theta_left) penalty += distance_cost;
                     }
                 }
 
                 // Determine the final penalty cost
-                cost = math.max(math.length(candidate_direction - desired_velocity), cost);
+                cost = math.max(penalty, cost);
                 if (cost == 100f) break;
             }
 
             // output result
             candidate_direction_results[index] = new CandidateDirection(index, cost);
-            
-            /*
-            // Primers
-            float2 candidate_direction = candidate_directions[index];
-            float2 potential = (2f * candidate_direction) - current_velocity;
-            float base_penalty = math.length(math.normalize(desired_velocity) - math.normalize(candidate_direction));
-            float penalty = 0f;
-
-            // iterate through all neighbors.
-            for(int i = 0; i < neighbors.Length; i++) {
-                GenerateAgents.AgentData other = neighbors[i];
-                if (agent_index == other.agent_index) continue; // Skip if ourselves
-
-                // RVO requires us to add a minkowski sum of radii between this agent and the other
-                float minkowski_radius = radius + other.radius;
-
-                // Let's calculate the left and right angle bounds of this agent
-                float2 diff_pos = other.position - position;                        // Calculate vector from here to neighbor
-                float distance = math.max(math.length(diff_pos), minkowski_radius); // We cap the possible distance to the minkowski radius
-                float theta = math.atan2(diff_pos[1], diff_pos[0]);                 // Relative to X+ axis, get the angle of this pos. diff. vector
-                float theta_ort = math.asin(minkowski_radius / distance);           // Get the orthogonal angle to consider left and right 
-                float theta_left = math.degrees(theta + theta_ort) + 360f;                 // Calculate the left angle bound.
-                float theta_right = math.degrees(theta - theta_ort) + 360f;                // Calculate the right angle bound.
-
-                // Let's calculate the potential diff and its own theta
-                float2 translate_pos = position + other.velocity;   // RVO is different - we estimate the positional translation given the other's velocity
-                float time_cost = distance / max_speed;             // Time cost is how fast it'll take for us to translate to the other, given our max speed
-                float2 diff = potential + position - translate_pos; // Hard to describe in a single line, just know it's RVO-specific
-                float theta_diff = math.degrees(math.atan2(diff[1], diff[0])) + 360f;    // Given diff, let's calculate its angle
-
-                // Validity check!
-                if (theta_right <= theta_diff && theta_diff <= theta_left) {
-                    // This is an invalid candidate, as it lies within VO of collision. What is its penalty?
-                    //penalty = math.max(penalty, (1f+aggressiveness)/time_cost);
-                    penalty = 1000f;
-                }
-            }
-            
-            // Output penalty to results. Just make sure to not adjust the order in the CPU later.
-            candidate_direction_results[index] = new CandidateDirection(index, base_penalty + penalty);
-            */
         }
     }
 }
