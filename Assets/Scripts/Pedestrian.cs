@@ -58,6 +58,7 @@ public class Pedestrian : MonoBehaviour
     [Header("=== Read-Only Data ===")]
     public bool reached_destination = false;
     public int num_neighbors = 0;
+    public int num_directions = 0;
 
     /* =========
     Jobification
@@ -101,8 +102,9 @@ public class Pedestrian : MonoBehaviour
         } else {
             candidate_directions_template = GenerateAgents.current.GenerateDirections(num_candidate_directions, max_speed);
         }
-        candidate_directions = new NativeArray<float2>(candidate_directions_template.Count+1, Allocator.Persistent);
-        candidate_direction_results = new NativeArray<CandidateDirection>(candidate_directions_template.Count+1, Allocator.Persistent);
+        num_directions = candidate_directions_template.Count+1;
+        candidate_directions = new NativeArray<float2>(num_directions, Allocator.Persistent);
+        candidate_direction_results = new NativeArray<CandidateDirection>(num_directions, Allocator.Persistent);
     }
 
     private void Update() {
@@ -184,8 +186,8 @@ public class Pedestrian : MonoBehaviour
 
     private void Movement() {
         Vector3 diff_pos = destination - transform.position;
-        reached_destination = diff_pos.magnitude > 0.1f;
-        if (!reached_destination) {
+        reached_destination = diff_pos.magnitude <= 0.05f;
+        if (reached_destination) {
             transform.position = destination;
             return;
         }

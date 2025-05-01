@@ -16,6 +16,7 @@ public class GenerateAgentsWithTrajectories : GenerateAgents
         public List<Vector3> points = new List<Vector3>();
     }
 
+    [Header("=== Trajectories ===")]
     public bool draw_trajectory_gizmos = false;
     public StartDestinationPair[] agent_trajectories;
 
@@ -83,16 +84,38 @@ public class GenerateAgentsWithTrajectories : GenerateAgents
     }
 
     protected override void LateUpdate() {
+        // Calculate current frame count
+        int frame = Time.frameCount;
+        int destination_count = 0;
+
         // Update each agent's data
         // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
         for(int i = 0; i < agent_positions.Length; i++) {
+
+            // update the current velocity of agents HERE, in order to properly update current velocity equally across all pedestrians
             agent_components[i].current_velocity = agent_components[i].velocity;
+
+            // Update our data
             agent_positions[i] = agent_components[i].position;
             agent_data[i].Update(agent_components[i].position, agent_components[i].velocity);
-            if (agent_components[i].reached_destination) agent_trajectories[i].points.Add(new Vector3(agent_positions[i].x, agent_components[i].current_velocity.magnitude, agent_positions[i].z));
+            AddAgentToWriter(frame, i);
+            if (!agent_components[i].reached_destination) agent_trajectories[i].points.Add(new Vector3(agent_positions[i].x, agent_components[i].current_velocity.magnitude, agent_positions[i].z));
+            else destination_count += 1;
         }
+
+        AddFPSToWriter(frame);
 
         // We update the KDTree here and now
         tree.Rebuild();
+
+        // Terminate app early if toggled to and if all agents reach their destinations
+        if (early_terminate_app && destination_count == agent_positions.Length) {
+            #if UNITY_STANDALONE
+                Application.Quit();
+            #endif
+            #if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+            #endif
+        }
     }
 }

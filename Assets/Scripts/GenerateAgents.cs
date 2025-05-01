@@ -48,8 +48,18 @@ public class GenerateAgents : MonoBehaviour
     [Tooltip("The main camera")]                            public Camera scene_cam;
     [Tooltip("The environment bounds from origin")]         public Vector2 bounds = new Vector2(20f,20f);
     [Tooltip("Visualize the bounds via Gizmos")]            public Color bounds_color = Color.yellow;
+
+    [Header("=== Record-Keeping ===")]
+    public CSVWriter agents_writer;
+    [Space]
+    [Range(0f, 1f)] public float fps_smoothing_factor = 0.25f;
+    public CSVWriter fps_writer;
+    [HideInInspector] public float current_fps;
+    [HideInInspector] public float smoothed_fps;
     
     [Space]
+    public bool early_terminate_app = true;
+
     [HideInInspector] public Vector3[] agent_positions;
     [HideInInspector] public Pedestrian[] agent_components;
     [HideInInspector] public AgentData[] agent_data;
@@ -85,8 +95,11 @@ public class GenerateAgents : MonoBehaviour
             scene_cam.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.up);
             scene_cam.orthographic = true;
             scene_cam.orthographicSize = ortho_size;
-
         }
+
+        // Initialize our writers
+        agents_writer.Initialize();
+        fps_writer.Initialize();
 
         // We want to generate our agents
         Generate();
@@ -125,16 +138,66 @@ public class GenerateAgents : MonoBehaviour
     }
 
     protected virtual void LateUpdate() {
+        // Calculate current frame count
+        int frame = Time.frameCount;
+        int destination_count = 0;
+
         // Update each agent's data
         // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
         for(int i = 0; i < agent_positions.Length; i++) {
             agent_components[i].current_velocity = agent_components[i].velocity;
             agent_positions[i] = agent_components[i].position;
             agent_data[i].Update(agent_components[i].position, agent_components[i].velocity);
+            AddAgentToWriter(frame, i);
+            if (agent_components[i].reached_destination) destination_count += 1;
         }
+
+        AddFPSToWriter(frame);
 
         // We update the KDTree here and now
         tree.Rebuild();
+
+        // Terminate app early if toggled to and if all agents reach their destinations
+        if (early_terminate_app && destination_count == agent_positions.Length) {
+            #if UNITY_STANDALONE
+                Application.Quit();
+            #endif
+            #if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+            #endif
+        }
+    }
+
+    protected virtual void OnDestroy() {
+        if (agents_writer.is_active) agents_writer.Disable();
+        if (fps_writer.is_active) fps_writer.Disable();
+    }
+
+    protected virtual void AddAgentToWriter(int frame, int i) {
+        // Update our writers. Order of columns = frame, agent_index, 2d position, 2d forward, 2d current velocity, 2d optimal_velocity, # neighbors, # candidate_directions
+        agents_writer.AddPayload(frame);
+        agents_writer.AddPayload(agent_components[i].agent_index);
+        agents_writer.AddPayload(agent_positions[i].x);
+        agents_writer.AddPayload(agent_positions[i].z);
+        agents_writer.AddPayload(agent_components[i].transform.forward.x);
+        agents_writer.AddPayload(agent_components[i].transform.forward.z);
+        agents_writer.AddPayload(agent_components[i].current_velocity.x);
+        agents_writer.AddPayload(agent_components[i].current_velocity.z);
+        agents_writer.AddPayload(agent_components[i].optimal_velocity.x);
+        agents_writer.AddPayload(agent_components[i].optimal_velocity.z);
+        agents_writer.AddPayload(agent_components[i].num_neighbors);
+        agents_writer.AddPayload(agent_components[i].num_directions);
+        agents_writer.WriteLine();
+    }
+
+    protected virtual void AddFPSToWriter(int frame) {
+        // Update our FPS writer
+        current_fps = 1f / Time.unscaledDeltaTime;
+        smoothed_fps = (fps_smoothing_factor * current_fps) + (1f - fps_smoothing_factor) * smoothed_fps;
+        fps_writer.AddPayload(frame);
+        fps_writer.AddPayload((int)current_fps);
+        fps_writer.AddPayload((int)smoothed_fps);
+        fps_writer.WriteLine();
     }
 
     

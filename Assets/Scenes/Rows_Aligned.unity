@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.99999946, g: 0.99999946, b: 0.99999946, a: 1}
+  m_IndirectSpecularColor: {r: 0.9997447, g: 0.9997447, b: 0.9997447, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -173,6 +173,39 @@ MonoBehaviour:
   scene_cam: {fileID: 963194227}
   bounds: {x: 15, y: 8.5}
   bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  agents_writer:
+    fileName: agents
+    dirName: Rows_Aligned
+    writeUnixTime: 0
+    append_zero_to_filename: 0
+    columns:
+    - frame
+    - agent_index
+    - position_x
+    - position_y
+    - forward_x
+    - forward_y
+    - current_velocity_x
+    - current_velocity_y
+    - optimal_velocity_x
+    - optimal_velocity_y
+    - num_neighbors
+    - num_candidate_directions
+    filePath: 
+  fps_smoothing_factor: 0.25
+  fps_writer:
+    fileName: fps
+    dirName: Rows_Aligned
+    writeUnixTime: 0
+    append_zero_to_filename: 0
+    columns:
+    - frame
+    - current_fps
+    - smoothed_fps
+    filePath: 
+  current_fps: 0
+  smoothed_fps: 0
+  early_terminate_app: 1
   agent_positions: []
   agent_components: []
   agent_data: []
