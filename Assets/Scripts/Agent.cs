@@ -39,6 +39,7 @@ public class Agent : MonoBehaviour
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
     public float stopping_distance = 0.05f;
+    public int max_neighbors = 8;
     [HideInInspector]   public Vector3 current_velocity;
     [HideInInspector]   public Vector3 desired_direction; // normalized
     [HideInInspector]   public Vector3 desired_velocity;
@@ -107,6 +108,7 @@ public class Agent : MonoBehaviour
         num_directions = candidate_directions_template.Count+1;
         candidate_directions = new NativeArray<float2>(num_directions, Allocator.Persistent);
         candidate_direction_results = new NativeArray<CandidateDirection>(num_directions, Allocator.Persistent);
+        neighbors = new NativeArray<GenerateAgents.AgentData>(max_neighbors, Allocator.Persistent);
     }
 
     protected virtual void Update() {
@@ -122,27 +124,32 @@ public class Agent : MonoBehaviour
         List<KDQuery.DistanceResult<GenerateAgents.AgentData>> results = new List<KDQuery.DistanceResult<GenerateAgents.AgentData>>();
         GenerateAgents.current.QueryRadiusSort(transform.position, 5f, ref results);
 
-        List<GenerateAgents.AgentData> neighbor_data = new List<GenerateAgents.AgentData>();
+        //List<GenerateAgents.AgentData> neighbor_data = new List<GenerateAgents.AgentData>();
+        int n_neighbors = 0;
         foreach(KDQuery.DistanceResult<GenerateAgents.AgentData> result in results) {
             GenerateAgents.AgentData other = result.data;
             if (agent_index == other.agent_index) continue;
             if (!simulate_vision) {
-                neighbor_data.Add(other);
-                if (neighbor_data.Count >= 8) break;    // end early if we've achieved 8 closest visible people.
+                neighbors[n_neighbors] = other;
+                n_neighbors += 1;
+                //neighbor_data.Add(other);
+                if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
                 continue;
             }
             Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
             Vector2Int b = new Vector2Int(Mathf.RoundToInt((other.position[0] - transform.position.x)*10), Mathf.RoundToInt((other.position[1] - transform.position.z) * 10));
             int dot = a.x * b.x + a.y * b.y;
             if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
-                neighbor_data.Add(other);
-                if (neighbor_data.Count >= 8) break;    // end early if we've achieved 8 closest visible people.
+                neighbors[n_neighbors] = other;
+                n_neighbors += 1;
+                //neighbor_data.Add(other);
+                if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
             }
         }
 
         // Updating our neighbor_indices nativearray
-        neighbors = new NativeArray<GenerateAgents.AgentData>(neighbor_data.ToArray(), Allocator.Persistent);
-        num_neighbors = neighbor_data.Count;
+        //neighbors = new NativeArray<GenerateAgents.AgentData>(neighbor_data.ToArray(), Allocator.Persistent);
+        num_neighbors = n_neighbors;
     }
 
     protected virtual void Processing() {
@@ -153,7 +160,7 @@ public class Agent : MonoBehaviour
         optimal_velocity = desired_velocity;
 
         // If we have neighbors, identify optimal velocity using RVO
-        if (neighbors.Length == 0) return;
+        if (num_neighbors == 0) return;
 
         // Update candidate directions with the current desired velocity
         for (int i = 0; i < candidate_directions_template.Count; i++) {
@@ -171,6 +178,7 @@ public class Agent : MonoBehaviour
             current_velocity = (float2)current_velocity.ToVector2(),
             desired_velocity = (float2)desired_velocity.ToVector2(),
             radius = spatial_radius,
+            num_neighbors = num_neighbors,
             candidate_direction_results = candidate_direction_results
         };
         /*
@@ -228,7 +236,7 @@ public class Agent : MonoBehaviour
         prev_current_velocity = translate_velocity;
     }
 
-    protected virtual void OnDestroy() {
+    protected virtual void OnApplicationQuit() {
         direction_job_handler.Complete();
         if (candidate_directions.IsCreated) candidate_directions.Dispose();
         if (candidate_direction_results.IsCreated) candidate_direction_results.Dispose();
@@ -256,6 +264,7 @@ public class Agent : MonoBehaviour
         [ReadOnly] public float2 current_velocity;  // Thecurrent 2D velocity in world space
         [ReadOnly] public float2 desired_velocity;  // The desired velocity this agent wants to move towards
         [ReadOnly] public float radius;         // Radius of this agent
+        [ReadOnly] public int num_neighbors;    // Number of detected neighbors
         // Outputs
         [WriteOnly] public NativeArray<CandidateDirection> candidate_direction_results;
 
@@ -270,7 +279,7 @@ public class Agent : MonoBehaviour
             float cost = 0f;
 
             // We have to iterate through all neighbors
-            for(int i = 0; i < neighbors.Length; i++) {
+            for(int i = 0; i < num_neighbors; i++) {
                 GenerateAgents.AgentData other = neighbors[i];
                 if (agent_index == other.agent_index) continue; // Skip if ourselves                
 

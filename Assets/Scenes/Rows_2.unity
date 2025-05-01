@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agent_parent: {fileID: 1442855860}
-  agent_prefab: {fileID: 2647434045502161628, guid: f98add34777f348a59d1aa3b09d43ddd, type: 3}
+  agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   num_agents: 2
   scene_cam: {fileID: 963194227}
   bounds: {x: 20, y: 5}
