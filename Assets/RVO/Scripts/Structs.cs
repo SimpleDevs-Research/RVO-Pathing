@@ -1,0 +1,42 @@
+using System.Collections.Generic;
+using UnityEngine;
+using Unity.Mathematics;
+
+namespace RVO {
+    [System.Serializable]
+    public struct AgentData {
+        public int agent_index;
+        public float2 position;
+        public float2 velocity;
+        public float radius;
+        public AgentData(int index, Vector3 position, Vector3 velocity, float radius) {
+            this.agent_index = index;
+            this.position = (float2)position.ToVector2();
+            this.velocity = (float2)velocity.ToVector2();
+            this.radius = radius;
+        }
+        public void Update(Vector3 position, Vector3 velocity) {
+            this.position = (float2)position.ToVector2();
+            this.velocity = (float2)velocity.ToVector2();
+        }
+    }
+
+    [System.Serializable]
+    public struct CandidateDirection {
+        public int index;
+        public float penalty;
+        public CandidateDirection(int index, float penalty=0f) {
+            this.index = index;
+            this.penalty = penalty;
+        }
+    }
+
+    [System.Serializable]
+    public struct StartDestinationPair {
+        public string name;
+        public Vector3 start;
+        public Vector3 end;
+        public Color color;
+        public List<Vector3> points;
+    }
+}
