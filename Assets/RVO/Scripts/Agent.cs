@@ -65,7 +65,7 @@ namespace RVO {
     private NativeArray<AgentData> neighbors;
     private DirectionJob direction_job;
     private JobHandle direction_job_handler;
-    private CandidateDirection[] candidate_rankings;
+    [SerializeField] private CandidateDirection[] candidate_rankings;
 
     #if UNITY_EDITOR
     protected virtual void OnDrawGizmos() {
@@ -73,8 +73,11 @@ namespace RVO {
         if (!draw_gizmos || !Application.isPlaying) return;
 
         Gizmos.color = Color.black;
-        Gizmos.DrawRay(transform.position, current_velocity);
-        Gizmos.DrawLine(transform.position, destination);
+        Gizmos.DrawWireSphere(transform.position, this.spatial_radius);
+
+        //Gizmos.color = Color.black;
+        //Gizmos.DrawRay(transform.position, current_velocity);
+        //Gizmos.DrawLine(transform.position, destination);
 
         Gizmos.color = Color.blue;
         for(int i = 0; i < num_candidate_directions; i++) {
@@ -84,10 +87,18 @@ namespace RVO {
         }
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, current_velocity);
+
+        Gizmos.color = Color.black;
+        for(int i = 0; i < num_neighbors; i++) {
+            Gizmos.DrawLine(transform.position, neighbors[i].position.ToVector3());
+        }
+
     }
     #endif
 
     protected virtual void Start() {
+        // Set our scale
+        transform.localScale = Vector3.one * this.spatial_radius;
         // Confirm destination
         if (generate_destination_on_start) 
             this.destination = (Generator.current != null) ? Generator.current.GetRandomPointInBounds() : transform.position;
@@ -105,6 +116,7 @@ namespace RVO {
     }
 
     protected virtual void Update() {
+        CalculateDesiredVelocity();
         Observation();
         Processing();
     }
@@ -112,19 +124,25 @@ namespace RVO {
     protected virtual void FixedUpdate() {
         Movement();
     }
-    
 
+    public virtual void CalculateDesiredVelocity() {
+        // Designate the desired direction and velocity
+        Vector3 dest_diff = destination - transform.position;
+        desired_direction = dest_diff.normalized;
+        desired_velocity = desired_direction * max_speed;
+    }
+    
     public virtual void Observation() {
         // The funky thing is that in the RVO library from van der Berg, they consider an additional `rangeSqr` value
         // This value is the minimum of either (this.visual_radius^2) or (max(deltaTime, maxSpeed/maxAcceleration) * maxSpeed * this.spatial_radius)
-        float rangeSqr = Mathf.Min(
+        float range_sq = Mathf.Min(
             Mathf.Pow(this.visual_radius,2),
             Mathf.Max(Time.unscaledDeltaTime, this.max_speed/this.acceleration) * this.max_speed * this.spatial_radius
         );
 
         // KDTree Query using radial sort. Results should output DistanceResults, which is a custom class outputted by KDQuery.
         List<KDQuery.DistanceResult<AgentData>> results = new List<KDQuery.DistanceResult<AgentData>>();
-        Generator.current.QueryRadiusSort(transform.position, Mathf.Sqrt(rangeSqr), ref results);
+        Generator.current.QueryRadiusSort(transform.position, this.visual_radius, ref results);
 
         // Pre-set our colliding handle to false
         colliding = false;
@@ -160,7 +178,7 @@ namespace RVO {
                 }
             }
             // else if case: if we aren't colliding yet and we still find someone, then we have to add them as an RVO neighbor
-            else {
+            else if (!colliding) {
                 if (!simulate_vision) {
                     neighbors[n_neighbors] = other;
                     n_neighbors += 1;
@@ -186,10 +204,6 @@ namespace RVO {
     }
 
     public virtual void Processing() {
-        // Designate the desired direction and velocity
-        Vector3 dest_diff = destination - transform.position;
-        desired_direction = dest_diff.normalized;
-        desired_velocity = desired_direction * max_speed;
         optimal_velocity = desired_velocity;
 
         // If we have neighbors, identify optimal velocity using RVO
@@ -316,30 +330,30 @@ namespace RVO {
         public float mult(float2 a, float2 b) { return a[0]*b[0] + a[1]*b[1]; }
 
         // helper: calculate absolute squear of a float2
-        public float absSq(float2 v) {
-            float m = mult(v, v);
-            return m*m;
-        }
+        public float absSq(float2 v) { return mult(v, v); }
+
+        // helper: calculate square (not square root) of a float
+        public float sq(float v) { return v*v; }
 
         // helper: calculate time to collision
-        public float TimeToCollision(float2 Vab, float2 pB, float rr) {
-            float2 ba = pB - position;
-            float sq_diam = rr * rr;
+        public float TimeToCollision(float2 pA, float2 Vab, float2 pB, float rr, bool collision) {
+            float2 ba = pB - pA;
+            float sq_diam = sq(rr);
             float Vab2 = absSq(Vab);
             float time;
 
-            float discr = -math.sqrt(det(Vab, ba)) + sq_diam * Vab2;
-            if (discr > 0) {
-                if (colliding) {
+            float discr = -sq(det(Vab, ba)) + sq_diam * Vab2;
+            if (discr > 0f) {
+                if (collision) {
                     time = (mult(Vab, ba) + math.sqrt(discr)) / Vab2;
-                    if (time < 0) time = -1000f;
+                    if (time < 0) time = -1000000f;
                 } else {
                     time = (mult(Vab, ba) - math.sqrt(discr)) / Vab2;
-                    if (time < 0) time = 1000f;
+                    if (time < 0) time = 1000000f;
                 }
             } else {
-                if (colliding) time = -1000f;
-                else time = 1000f;
+                if (collision) time = -1000000f;
+                else time = 1000000f;
             }
             return time;
         }
@@ -354,10 +368,7 @@ namespace RVO {
             // Calculate the distance cost and time cost
             float distance_cost = 0f;
             if (!colliding) distance_cost = math.length(candidate_direction - desired_velocity);
-            float time_cost = 1000f;
-
-            // Calculate the min penalty of 1000 too
-            float min_penalty = 1000f;
+            float time_cost = 1000000f;
 
             // We have to iterate through all neighbors
             for(int i = 0; i < num_neighbors; i++) {
@@ -369,18 +380,14 @@ namespace RVO {
                 // calculate time to collision for this agent
                 float2 translate_vb_va = 2f * candidate_direction - current_velocity - other.velocity;
                 float mink_sum = radius + other.radius;
-                float time = TimeToCollision(translate_vb_va, other.position, mink_sum);
+                float time = TimeToCollision(position, translate_vb_va, other.position, mink_sum, colliding);
 
                 // mod time to collision for this current agent with additional metrics, based on if we're colliding or not
-                if (colliding) ct = -math.ceil(time / dt ) - absSq(candidate_direction) / math.sqrt(max_speed);
+                if (colliding) ct = -math.ceil(time / dt) - (absSq(candidate_direction)/sq(max_speed));
                 else ct = time;
 
                 // If the current time to collision is less than the time cost, then we set it
-                if (ct < time_cost) {
-                    time_cost = ct;
-                    // pruning search if no better penalty can be obtained anymore for this velocity
-                    if ( safety_factor / time_cost + distance_cost >= min_penalty) break;
-                }
+                if (ct < time_cost) time_cost = ct;
 
                 /*
                 // Calculate translation of VB to VA. RVO-specific
@@ -436,10 +443,9 @@ namespace RVO {
 
             // ultimately, after considering all neighbor,s calculate the final penalty cost
             float penalty = safety_factor / time_cost + distance_cost;
-            if (penalty < min_penalty) min_penalty = penalty;
 
             // output result
-            candidate_direction_results[index] = new CandidateDirection(index, penalty);
+            candidate_direction_results[index] = new CandidateDirection(index, distance_cost, time_cost, penalty);
         }
     }
 }

@@ -27,8 +27,8 @@ Transform:
   m_GameObject: {fileID: 1193424470097521067}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 0}
-  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7056520964995312517}
@@ -131,15 +131,15 @@ MonoBehaviour:
   generate_destination_on_start: 1
   destination: {x: 0, y: 0, z: 0}
   agent_index: 0
-  num_candidate_directions: 16
-  multi_speed_candidates: 0
+  num_candidate_directions: 24
+  multi_speed_candidates: 1
   min_speed: 0.5
   max_speed: 1.5
   speed_step: 0.25
-  visual_radius: 3
-  spatial_radius: 0.5
+  visual_radius: 5
+  spatial_radius: 0.25
   stopping_distance: 0.05
-  safety_factor: 100
+  safety_factor: 0.5
   max_neighbors: 8
   current_velocity: {x: 0, y: 0, z: 0}
   desired_direction: {x: 0, y: 0, z: 0}
@@ -155,3 +155,4 @@ MonoBehaviour:
   colliding: 0
   num_neighbors: 0
   num_directions: 0
+  candidate_rankings: []

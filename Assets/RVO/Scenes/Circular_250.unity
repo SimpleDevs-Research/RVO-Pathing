@@ -1462,7 +1462,7 @@ MonoBehaviour:
   current_fps: 0
   smoothed_fps: 0
   draw_bounds: 1
-  draw_start_end: 1
+  draw_start_end: 0
   draw_paths: 0
   num_agents: 250
   agent_positions: []

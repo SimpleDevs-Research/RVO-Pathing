@@ -133,6 +133,7 @@ GameObject:
   m_Component:
   - component: {fileID: 95509513}
   - component: {fileID: 95509514}
+  - component: {fileID: 95509515}
   m_Layer: 0
   m_Name: RVO
   m_TagString: Untagged
@@ -168,7 +169,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agent_parent: {fileID: 2122366914}
-  agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
+  agent_prefab: {fileID: 2647434045502161628, guid: f98add34777f348a59d1aa3b09d43ddd, type: 3}
   randomize_starts: 0
   randomize_ends: 0
   scene_cam: {fileID: 963194227}
@@ -287,6 +288,37 @@ MonoBehaviour:
   agent_positions: []
   agent_components: []
   agent_data: []
+--- !u!114 &95509515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 95509511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_AgentTypeID: 0
+  m_CollectObjects: 0
+  m_Size: {x: 10, y: 10, z: 10}
+  m_Center: {x: 0, y: 2, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_UseGeometry: 0
+  m_DefaultArea: 0
+  m_GenerateLinks: 0
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0.16666667
+  m_MinRegionArea: 2
+  m_NavMeshData: {fileID: 23800000, guid: b65a99be882a34a1eadad9f61204be40, type: 2}
+  m_BuildHeightMesh: 0
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
