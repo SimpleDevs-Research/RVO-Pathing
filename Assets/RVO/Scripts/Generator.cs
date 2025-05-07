@@ -55,11 +55,6 @@ namespace RVO {
 
         [Header("=== Read-Only ===")]
         [Tooltip("How many agents were generated?")]    public int num_agents = 50;
-
-
-
-
-
         [HideInInspector] public Vector3[] agent_positions;
         [HideInInspector] public Agent[] agent_components;
         [HideInInspector] public AgentData[] agent_data;
@@ -188,6 +183,7 @@ namespace RVO {
                 // Update our arrays
                 agent_positions[i] = agent_components[i].position;
                 agent_data[i].Update(agent_components[i].position, agent_components[i].velocity);
+                //agent_components[i].Movement();
                 
                 // Record our data
                 if (record_data) AddAgentToWriter(frame, i);
@@ -242,11 +238,13 @@ namespace RVO {
 
         protected virtual void AddFPSToWriter(int frame) {
             // Update our FPS writer
-            current_fps = 1f / Time.unscaledDeltaTime;
+            float dt = Time.unscaledDeltaTime;
+            current_fps = 1f / dt;
             smoothed_fps = (fps_smoothing_factor * current_fps) + (1f - fps_smoothing_factor) * smoothed_fps;
             fps_writer.AddPayload(frame);
             fps_writer.AddPayload((int)current_fps);
             fps_writer.AddPayload((int)smoothed_fps);
+            fps_writer.AddPayload(dt);
             fps_writer.WriteLine();
         }
 

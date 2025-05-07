@@ -16,6 +16,7 @@ namespace RVO {
             this.radius = radius;
         }
         public void Update(Vector3 position, Vector3 velocity) {
+            // Set position and velocity
             this.position = (float2)position.ToVector2();
             this.velocity = (float2)velocity.ToVector2();
         }

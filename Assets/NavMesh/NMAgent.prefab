@@ -10,7 +10,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
       propertyPath: m_Name
-      value: Agent-NM
+      value: NMAgent
       objectReference: {fileID: 0}
     - target: {fileID: 7056520964995312517, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
       propertyPath: m_LocalPosition.x
@@ -91,7 +91,8 @@ MonoBehaviour:
   speed_step: 0.25
   visual_radius: 3
   spatial_radius: 0.25
-  stopping_distance: 0.05
+  stopping_distance: 0.1
+  max_neighbors: 8
   current_velocity: {x: 0, y: 0, z: 0}
   desired_direction: {x: 0, y: 0, z: 0}
   desired_velocity: {x: 0, y: 0, z: 0}

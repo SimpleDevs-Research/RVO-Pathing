@@ -30,6 +30,7 @@ namespace RVO {
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
     public float stopping_distance = 0.05f;
+    public float safety_factor = 1f;
     public int max_neighbors = 8;
     [HideInInspector]   public Vector3 current_velocity;
     [HideInInspector]   public Vector3 desired_direction; // normalized
@@ -51,6 +52,7 @@ namespace RVO {
     [Header("=== Read-Only Data ===")]
     public float distance_to_destination = 0f;
     public bool reached_destination = false;
+    public bool colliding = false;
     public int num_neighbors = 0;
     public int num_directions = 0;
 
@@ -106,44 +108,84 @@ namespace RVO {
         Observation();
         Processing();
     }
+    
     protected virtual void FixedUpdate() {
         Movement();
     }
+    
 
-    protected virtual void Observation() {
+    public virtual void Observation() {
+        // The funky thing is that in the RVO library from van der Berg, they consider an additional `rangeSqr` value
+        // This value is the minimum of either (this.visual_radius^2) or (max(deltaTime, maxSpeed/maxAcceleration) * maxSpeed * this.spatial_radius)
+        float rangeSqr = Mathf.Min(
+            Mathf.Pow(this.visual_radius,2),
+            Mathf.Max(Time.unscaledDeltaTime, this.max_speed/this.acceleration) * this.max_speed * this.spatial_radius
+        );
+
         // KDTree Query using radial sort. Results should output DistanceResults, which is a custom class outputted by KDQuery.
         List<KDQuery.DistanceResult<AgentData>> results = new List<KDQuery.DistanceResult<AgentData>>();
-        Generator.current.QueryRadiusSort(transform.position, 5f, ref results);
+        Generator.current.QueryRadiusSort(transform.position, Mathf.Sqrt(rangeSqr), ref results);
+
+        // Pre-set our colliding handle to false
+        colliding = false;
 
         //List<AgentData> neighbor_data = new List<AgentData>();
         int n_neighbors = 0;
         foreach(KDQuery.DistanceResult<AgentData> result in results) {
             AgentData other = result.data;
             if (agent_index == other.agent_index) continue;
-            if (!simulate_vision) {
-                neighbors[n_neighbors] = other;
-                n_neighbors += 1;
-                //neighbor_data.Add(other);
-                if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
-                continue;
+
+            // We need to check if we're colliding with this agent.
+            // the DistanceResult should tell us how far away the other agent is from us already, in sqr meters
+            if (result.distance < Mathf.Pow(other.radius + this.radius, 2)) {
+                // We're colliding. Let's do some stuff
+                if (!colliding) {
+                    colliding = true;
+                    n_neighbors = 0;
+                }
+                // If we don't simulate vision, then do simple stuff
+                if (!simulate_vision) {
+                    neighbors[n_neighbors] = other;
+                    n_neighbors += 1;
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
+                    continue;
+                }
+                Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
+                Vector2Int b = new Vector2Int(Mathf.RoundToInt((other.position[0] - transform.position.x)*10), Mathf.RoundToInt((other.position[1] - transform.position.z) * 10));
+                int dot = a.x * b.x + a.y * b.y;
+                if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
+                    neighbors[n_neighbors] = other;
+                    n_neighbors += 1;
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
+                }
             }
-            Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
-            Vector2Int b = new Vector2Int(Mathf.RoundToInt((other.position[0] - transform.position.x)*10), Mathf.RoundToInt((other.position[1] - transform.position.z) * 10));
-            int dot = a.x * b.x + a.y * b.y;
-            if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
-                neighbors[n_neighbors] = other;
-                n_neighbors += 1;
-                //neighbor_data.Add(other);
-                if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
+            // else if case: if we aren't colliding yet and we still find someone, then we have to add them as an RVO neighbor
+            else {
+                if (!simulate_vision) {
+                    neighbors[n_neighbors] = other;
+                    n_neighbors += 1;
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
+                    continue;
+                }
+                Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
+                Vector2Int b = new Vector2Int(Mathf.RoundToInt((other.position[0] - transform.position.x)*10), Mathf.RoundToInt((other.position[1] - transform.position.z) * 10));
+                int dot = a.x * b.x + a.y * b.y;
+                if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
+                    neighbors[n_neighbors] = other;
+                    n_neighbors += 1;
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
+                }
             }
         }
 
         // Updating our neighbor_indices nativearray
-        //neighbors = new NativeArray<AgentData>(neighbor_data.ToArray(), Allocator.Persistent);
         num_neighbors = n_neighbors;
+
+        // By this point, if we detected that we were colliding with someone, then our neighbors are only those we're colliding with.
+        // Alternatively, if we haven't detected any collisions, then we should only be considering those that are within our range of detection.
     }
 
-    protected virtual void Processing() {
+    public virtual void Processing() {
         // Designate the desired direction and velocity
         Vector3 dest_diff = destination - transform.position;
         desired_direction = dest_diff.normalized;
@@ -168,8 +210,12 @@ namespace RVO {
             position = (float2)transform.position.ToVector2(),
             current_velocity = (float2)current_velocity.ToVector2(),
             desired_velocity = (float2)desired_velocity.ToVector2(),
+            max_speed = max_speed,
             radius = spatial_radius,
+            safety_factor = safety_factor,
             num_neighbors = num_neighbors,
+            colliding = colliding,
+            dt = Time.unscaledDeltaTime,
             candidate_direction_results = candidate_direction_results
         };
         /*
@@ -185,7 +231,7 @@ namespace RVO {
         optimal_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
     }
 
-    protected virtual void Movement() {
+    public virtual void Movement() {
         Vector3 diff_pos = destination - transform.position;
         distance_to_destination = diff_pos.magnitude;
         reached_destination = distance_to_destination <= stopping_distance;
@@ -254,10 +300,49 @@ namespace RVO {
         [ReadOnly] public float2 position;  // 2D position in world space
         [ReadOnly] public float2 current_velocity;  // Thecurrent 2D velocity in world space
         [ReadOnly] public float2 desired_velocity;  // The desired velocity this agent wants to move towards
+        [ReadOnly] public float max_speed;      // max speed the agent wants to move
         [ReadOnly] public float radius;         // Radius of this agent
+        [ReadOnly] public float safety_factor;  // The agent's willingness to be safe.
         [ReadOnly] public int num_neighbors;    // Number of detected neighbors
+        [ReadOnly] public bool colliding;       // Are we currently colliding with any neighbors?
+        [ReadOnly] public float dt;
         // Outputs
         [WriteOnly] public NativeArray<CandidateDirection> candidate_direction_results;
+
+        // helper: calcualte determinatne of two float2's
+        public float det(float2 a, float2 b) { return a[0]*b[1] - a[1]*b[0]; }
+    
+        // helper: calculate multiple of two float2's into single float
+        public float mult(float2 a, float2 b) { return a[0]*b[0] + a[1]*b[1]; }
+
+        // helper: calculate absolute squear of a float2
+        public float absSq(float2 v) {
+            float m = mult(v, v);
+            return m*m;
+        }
+
+        // helper: calculate time to collision
+        public float TimeToCollision(float2 Vab, float2 pB, float rr) {
+            float2 ba = pB - position;
+            float sq_diam = rr * rr;
+            float Vab2 = absSq(Vab);
+            float time;
+
+            float discr = -math.sqrt(det(Vab, ba)) + sq_diam * Vab2;
+            if (discr > 0) {
+                if (colliding) {
+                    time = (mult(Vab, ba) + math.sqrt(discr)) / Vab2;
+                    if (time < 0) time = -1000f;
+                } else {
+                    time = (mult(Vab, ba) - math.sqrt(discr)) / Vab2;
+                    if (time < 0) time = 1000f;
+                }
+            } else {
+                if (colliding) time = -1000f;
+                else time = 1000f;
+            }
+            return time;
+        }
 
         // Execute function. We're provided an index.
         // This index is the item index of candidate_directions and candidate_direction_results
@@ -265,17 +350,41 @@ namespace RVO {
 
             // What's the direction we're checking now?
             float2 candidate_direction = candidate_directions[index];
-            
-            // Every candidate direction comes with a cost of 0
-            float cost = 0f;
+
+            // Calculate the distance cost and time cost
+            float distance_cost = 0f;
+            if (!colliding) distance_cost = math.length(candidate_direction - desired_velocity);
+            float time_cost = 1000f;
+
+            // Calculate the min penalty of 1000 too
+            float min_penalty = 1000f;
 
             // We have to iterate through all neighbors
             for(int i = 0; i < num_neighbors; i++) {
-                AgentData other = neighbors[i];
-                if (agent_index == other.agent_index) continue; // Skip if ourselves                
+                AgentData other = neighbors[i]; 
 
+                // Priming the time to collision for this specific agent
+                float ct;
+
+                // calculate time to collision for this agent
+                float2 translate_vb_va = 2f * candidate_direction - current_velocity - other.velocity;
+                float mink_sum = radius + other.radius;
+                float time = TimeToCollision(translate_vb_va, other.position, mink_sum);
+
+                // mod time to collision for this current agent with additional metrics, based on if we're colliding or not
+                if (colliding) ct = -math.ceil(time / dt ) - absSq(candidate_direction) / math.sqrt(max_speed);
+                else ct = time;
+
+                // If the current time to collision is less than the time cost, then we set it
+                if (ct < time_cost) {
+                    time_cost = ct;
+                    // pruning search if no better penalty can be obtained anymore for this velocity
+                    if ( safety_factor / time_cost + distance_cost >= min_penalty) break;
+                }
+
+                /*
                 // Calculate translation of VB to VA. RVO-specific
-                float2 translate_VB_VA = position + 0.5f * (other.velocity - current_velocity);
+                float2 translate_VB_VA = position + 2f * (other.velocity - current_velocity);
 
                 // Calculate diff and its theta
                 float2 diff = candidate_direction + position - translate_VB_VA;
@@ -304,7 +413,7 @@ namespace RVO {
                 // We need to check if theta_diff is between theta_left and theta_right. If so, this is an unsuitable candidate
                 // In this case, we apply a max penalty of 1000
                 if (math.abs(theta_right - theta_left) <= math.PI) {
-                    if (theta_right <= theta_diff && theta_diff <= theta_left) penalty += distance_cost;
+                    if (theta_right <= theta_diff && theta_diff <= theta_left) penalty += 100f;
                 } else {
                     // We need to consider the case where the signs of theta_left and theta_right are smaller than 0
                     if (theta_left < 0f) theta_left += 2f * math.PI;
@@ -312,20 +421,25 @@ namespace RVO {
                     if (theta_diff < 0f) theta_diff += 2f * math.PI;
 
                     if (theta_left < theta_right) {
-                        if (theta_left <= theta_diff && theta_diff <= theta_right) penalty += distance_cost;
+                        if (theta_left <= theta_diff && theta_diff <= theta_right) penalty += 100f;
                     }
                     else {
-                        if (theta_right <= theta_diff && theta_diff <= theta_left) penalty += distance_cost;
+                        if (theta_right <= theta_diff && theta_diff <= theta_left) penalty += 100f;
                     }
                 }
 
                 // Determine the final penalty cost
                 cost = math.max(penalty, cost);
-                if (cost == 100f) break;
+                if (cost >= 100f) break;
+                */
             }
 
+            // ultimately, after considering all neighbor,s calculate the final penalty cost
+            float penalty = safety_factor / time_cost + distance_cost;
+            if (penalty < min_penalty) min_penalty = penalty;
+
             // output result
-            candidate_direction_results[index] = new CandidateDirection(index, cost);
+            candidate_direction_results[index] = new CandidateDirection(index, penalty);
         }
     }
 }

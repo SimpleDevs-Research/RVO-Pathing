@@ -132,13 +132,14 @@ MonoBehaviour:
   destination: {x: 0, y: 0, z: 0}
   agent_index: 0
   num_candidate_directions: 16
-  multi_speed_candidates: 1
+  multi_speed_candidates: 0
   min_speed: 0.5
   max_speed: 1.5
   speed_step: 0.25
   visual_radius: 3
-  spatial_radius: 0.25
+  spatial_radius: 0.5
   stopping_distance: 0.05
+  safety_factor: 100
   max_neighbors: 8
   current_velocity: {x: 0, y: 0, z: 0}
   desired_direction: {x: 0, y: 0, z: 0}
@@ -147,9 +148,10 @@ MonoBehaviour:
   prev_current_velocity: {x: 0, y: 0, z: 0}
   simulate_vision: 1
   acceleration: 2
-  angular_speed: 60
+  angular_speed: 90
   draw_gizmos: 0
   distance_to_destination: 0
-  reached_destination: 0
+  reached_destination: 1
+  colliding: 0
   num_neighbors: 0
   num_directions: 0
