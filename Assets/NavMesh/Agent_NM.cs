@@ -47,9 +47,9 @@ public class Agent_NM : Agent
 
     // Note: We don't need to actually move the agent in this implementation
     // However, we still need to update `current_velocity`.
-    public override void Movement() {
+    public override void Movement(float deltaTime) {
         // Update our record of our current velocity
-        current_velocity = (transform.position - prev_position) / Time.fixedDeltaTime;
+        current_velocity = (transform.position - prev_position) / deltaTime;
         prev_position = transform.position;
 
         // Inform if we've reached our destination, according to NavMeshAgent

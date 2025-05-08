@@ -27,17 +27,20 @@ namespace RVO {
         public int index;
         public float distance_cost;
         public float time_cost;
+        public float discr;
         public float penalty;
         public CandidateDirection(int index, float penalty=0f) {
             this.index = index;
             this.distance_cost = 0f;
             this.time_cost  = 0f;
+            this.discr = 0f;
             this.penalty = penalty;
         }
-        public CandidateDirection(int index, float distance_cost, float time_cost, float penalty=0f) {
+        public CandidateDirection(int index, float distance_cost, float time_cost, float discr, float penalty=0f) {
             this.index = index;
             this.distance_cost = distance_cost;
             this.time_cost = time_cost;
+            this.discr = discr;
             this.penalty = penalty;
         }
     }

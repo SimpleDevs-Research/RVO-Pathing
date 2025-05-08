@@ -187,34 +187,54 @@ MonoBehaviour:
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: 
-    start: {x: 2.5, y: 0, z: 3.25}
-    end: {x: 17.5, y: 0, z: 3.25}
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: 
-    start: {x: 2.5, y: 0, z: 4.5}
-    end: {x: 17.5, y: 0, z: 4.5}
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: 
-    start: {x: 2.5, y: 0, z: 5.75}
-    end: {x: 17.5, y: 0, z: 5.75}
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: 
-    start: {x: 2.5, y: 0, z: 7}
-    end: {x: 17.5, y: 0, z: 7}
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: 
-    start: {x: 2.5, y: 0, z: 8.25}
-    end: {x: 17.5, y: 0, z: 8.25}
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
     color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   - name: 
-    start: {x: 17.5, y: 0, z: 1.75}
-    end: {x: 2.5, y: 0, z: 1.75}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - name: 
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - name: 
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - name: 
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
+    points: []
+  - name: 
+    start: {x: 2.5, y: 0, z: 2}
+    end: {x: 17.5, y: 0, z: 2}
+    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
     points: []
   early_terminate_app: 1
   fps_smoothing_factor: 0.25
