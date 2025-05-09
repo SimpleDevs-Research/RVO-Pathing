@@ -75,15 +75,11 @@ namespace RVO {
         Gizmos.color = Color.black;
         Gizmos.DrawWireSphere(transform.position, this.spatial_radius);
 
-        //Gizmos.color = Color.black;
-        //Gizmos.DrawRay(transform.position, current_velocity);
-        //Gizmos.DrawLine(transform.position, destination);
-
         Gizmos.color = Color.blue;
         for(int i = 0; i < num_candidate_directions; i++) {
             float2 candidate_dir = candidate_directions[candidate_rankings[i].index];
             float penalty = candidate_rankings[i].penalty;
-            Gizmos.DrawRay(transform.position, candidate_dir.ToVector3() * (1f-penalty));
+            Gizmos.DrawRay(transform.position, candidate_dir.ToVector3().normalized * (num_candidate_directions-i)/num_candidate_directions);
         }
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, current_velocity);
@@ -203,6 +199,10 @@ namespace RVO {
             }
             */
 
+            if (!colliding && result.distance < Mathf.Pow(other.radius + this.radius, 2)) {
+                colliding = true;
+            }
+
             if (!simulate_vision) {
                 neighbors[n_neighbors] = other;
                 n_neighbors += 1;
@@ -225,17 +225,18 @@ namespace RVO {
 
     public virtual void Processing() {
         optimal_velocity = desired_velocity;
-
-        // If we have neighbors, identify optimal velocity using RVO
+        
+        // If we have don't have neighbors, just go with default optimal velocity
         if (num_neighbors == 0) return;
 
         // Update candidate directions with the current desired velocity
-        for (int i = 0; i < candidate_directions_template.Count; i++) {
-            candidate_directions[i] = candidate_directions_template[i];
+        for (int i = 1; i <= candidate_directions_template.Count; i++) {
+            candidate_directions[i] = candidate_directions_template[i-1];
             candidate_direction_results[i] = new CandidateDirection(i);
         }
-        candidate_directions[candidate_directions_template.Count] = (float2)desired_velocity.ToVector2();
-        candidate_direction_results[candidate_directions_template.Count] = new CandidateDirection(candidate_directions_template.Count);
+        candidate_directions[0] = (float2)desired_velocity.ToVector2();
+        candidate_direction_results[0] = new CandidateDirection(0);
+
         // Initialize the job
         direction_job = new DirectionJob() {
             candidate_directions = candidate_directions,
@@ -274,6 +275,7 @@ namespace RVO {
             return;
         }
 
+        /*
         // Rotate the agent to face the direction of the optimal velocity,. but only if the optimal velocity isn't Vector3.zero
         Quaternion target_rotation = (current_velocity != Vector3.zero) 
             ? Quaternion.LookRotation(current_velocity)
@@ -283,6 +285,7 @@ namespace RVO {
         // Rotate towards the target rotation but do not overshoot
         if (angular_step > angle_difference) transform.rotation = target_rotation;
         else transform.rotation = Quaternion.RotateTowards(transform.rotation, target_rotation, angular_step);
+        */
 
         // Calculate the difference between our current velocity and the optimal velocity
         /*
@@ -304,13 +307,14 @@ namespace RVO {
         }
         */
         Vector3 translate_velocity;
-        float dv = (current_velocity - prev_current_velocity).magnitude;
-        if (dv < acceleration * deltaTime) translate_velocity = current_velocity;
-        else translate_velocity = (1f - (acceleration * deltaTime / dv)) * prev_current_velocity + (acceleration * deltaTime / dv) * current_velocity;
+        float dv = (optimal_velocity - current_velocity).magnitude;
+        if (dv < acceleration * deltaTime) current_velocity = optimal_velocity;
+        else current_velocity = (1f - (acceleration * deltaTime / dv)) * current_velocity + (acceleration * deltaTime / dv) * optimal_velocity;
 
         // Translate the agent
-        transform.position += translate_velocity * deltaTime;
-        prev_current_velocity = translate_velocity;
+        transform.position += current_velocity * deltaTime;
+        transform.rotation = Quaternion.LookRotation(current_velocity);
+        //prev_current_velocity = current_velocity;
     }
 
     protected virtual void OnApplicationQuit() {
@@ -394,6 +398,7 @@ namespace RVO {
             // Calculate the distance cost and time cost
             float distance_cost = 0f;
             if (!colliding) distance_cost = math.length(candidate_direction - desired_velocity);
+            //if (!colliding) distance_cost = math.length(candidate_direction - current_v);
             float time_cost = 1000000f;
             float discr = -10;
 
@@ -414,7 +419,7 @@ namespace RVO {
                 else ct = time[0];
 
                 // If the current time to collision is less than the time cost, then we set it
-                if (ct < time_cost+1) {
+                if (ct < time_cost) {
                     time_cost = ct;
                     discr = time[1];
                 }

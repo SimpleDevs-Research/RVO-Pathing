@@ -178,11 +178,11 @@ namespace RVO {
             // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
             for(int i = 0; i < agent_positions.Length; i++) {
                 // Let our agent know they can move in the current velocity in their component
-                agent_components[i].current_velocity = agent_components[i].velocity;
+                //agent_components[i].current_velocity = agent_components[i].optimal_velocity;
                 
                 // Update our arrays
                 agent_positions[i] = agent_components[i].position;
-                agent_data[i].Update(agent_components[i].position, agent_components[i].velocity);
+                agent_data[i].Update(agent_components[i].position, agent_components[i].current_velocity);
                 //agent_components[i].Movement();
                 
                 // Record our data
