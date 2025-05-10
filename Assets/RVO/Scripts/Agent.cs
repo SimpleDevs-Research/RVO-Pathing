@@ -14,14 +14,11 @@ using UnityEditor;
 #endif
 
 namespace RVO {
-
     public class Agent : MonoBehaviour {
 
-    public enum SideBias { Left, Right, ByAgentID, Random }
-
-    [Header("=== Agent Settings ===")]
-    public bool generate_destination_on_start = true;
-    public Vector3 destination;
+        [Header("=== Agent Settings ===")]
+        public bool generate_destination_on_start = true;
+        public Vector3 destination;
 
     [Header("=== RVO ===")]
     public int agent_index;
@@ -37,16 +34,14 @@ namespace RVO {
     public int max_neighbors = 8;
     [HideInInspector]   public Vector3 current_velocity;
     [HideInInspector]   public Vector3 desired_direction; // normalized
-    [HideInInspector]   public Vector3 desired_velocity = Vector3.zero;
-    [HideInInspector]   public Vector3 optimal_velocity = Vector3.zero;
-    [HideInInspector]   public Vector3 new_velocity = Vector3.zero;
+    [HideInInspector]   public Vector3 desired_velocity;
+    [HideInInspector]   public Vector3 optimal_velocity;
+    [HideInInspector]   public Vector3 prev_current_velocity;
     [HideInInspector]   public Vector3 position => this.transform.position;
     [HideInInspector]   public Vector3 velocity => this.optimal_velocity;
     [HideInInspector]   public float radius => this.spatial_radius;
 
     [Header("=== Non-RVO ===")]
-    public SideBias side_bias = SideBias.ByAgentID;
-    public float side_bias_factor = 0.025f;
     public bool simulate_vision = true;
     public float acceleration = 1.5f;
     public float angular_speed = 60f;
@@ -55,7 +50,6 @@ namespace RVO {
     public bool draw_gizmos = false;
 
     [Header("=== Read-Only Data ===")]
-    public float side_bias_sign = 0f;
     public float distance_to_destination = 0f;
     public bool reached_destination = false;
     public bool colliding = false;
@@ -81,15 +75,18 @@ namespace RVO {
         Gizmos.color = Color.black;
         Gizmos.DrawWireSphere(transform.position, this.spatial_radius);
 
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(transform.position, current_velocity);
+        //Gizmos.color = Color.black;
+        //Gizmos.DrawRay(transform.position, current_velocity);
+        //Gizmos.DrawLine(transform.position, destination);
 
         Gizmos.color = Color.blue;
         for(int i = 0; i < num_candidate_directions; i++) {
             float2 candidate_dir = candidate_directions[candidate_rankings[i].index];
             float penalty = candidate_rankings[i].penalty;
-            Gizmos.DrawRay(transform.position, candidate_dir.ToVector3().normalized * (num_candidate_directions-i)/num_candidate_directions);
+            Gizmos.DrawRay(transform.position, candidate_dir.ToVector3() * (1f-penalty));
         }
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(transform.position, current_velocity);
     }
 
     protected virtual void OnDrawGizmosSelected() {
@@ -120,52 +117,23 @@ namespace RVO {
         candidate_directions = new NativeArray<float2>(num_directions, Allocator.Persistent);
         candidate_direction_results = new NativeArray<CandidateDirection>(num_directions, Allocator.Persistent);
         neighbors = new NativeArray<AgentData>(max_neighbors, Allocator.Persistent);
-
-        // Pre-calculate our desired velocity stats, using a deltaTime of 0
-        SetDesiredVelocity(0f);
-
-        // Designate direction preference
-        switch(side_bias) {
-            case SideBias.Left:
-                side_bias_sign = -1f;
-                break;
-            case SideBias.Right:
-                side_bias_sign = 1f;
-                break;
-            case SideBias.ByAgentID:
-                side_bias_sign = (agent_index % 2 == 0) ? -1f : 1f;
-                break;
-            default:
-                float r = UnityEngine.Random.Range(-1f,1f);
-                side_bias_sign = Mathf.Sign(r) * Mathf.Ceil(Mathf.Abs(r));
-                break;
-        }
     }
 
     protected virtual void Update() {
-        float deltaTime = Time.deltaTime;
-        SetDesiredVelocity(deltaTime);
+        CalculateDesiredVelocity();
         Observation();
-        Processing(deltaTime);
+        Processing();
     }
     
-    protected virtual void LateUpdate() {
-        Movement(Time.deltaTime);
+    protected virtual void FixedUpdate() {
+        Movement(Time.fixedDeltaTime);
     }
 
-    public virtual void SetDesiredVelocity(float deltaTime) {
-        // calculate distance and direction to destination
+    public virtual void CalculateDesiredVelocity() {
+        // Designate the desired direction and velocity
         Vector3 dest_diff = destination - transform.position;
-        distance_to_destination = dest_diff.magnitude;
         desired_direction = dest_diff.normalized;
-        reached_destination = distance_to_destination <= stopping_distance;
-
-        // Calculate desired direction and velocity. 
-        // IF case considers if we're approaching our destination with a step size larger than our desired velocity given the time step.
-        desired_velocity = (max_speed * deltaTime > distance_to_destination)
-            ? dest_diff / deltaTime
-            : max_speed * desired_direction;
-
+        desired_velocity = desired_direction * max_speed;
     }
     
     public virtual void Observation() {
@@ -179,12 +147,8 @@ namespace RVO {
         //List<AgentData> neighbor_data = new List<AgentData>();
         int n_neighbors = 0;
         foreach(KDQuery.DistanceResult<AgentData> result in results) {
-            // Check: are we ourselves? If so, skip.
             AgentData other = result.data;
             if (agent_index == other.agent_index) continue;
-
-            // Set ourselves that we're collding if we do happen to be colliding
-            if (!colliding && result.distance < Mathf.Pow(other.radius + this.radius, 2)) colliding = true;
 
             // There is a significant change between this implementation and ours.
             // Namely, from what I understand, the original van der Berg implementation has this quirk about their RVO implementation.
@@ -208,7 +172,7 @@ namespace RVO {
                 if (!simulate_vision) {
                     neighbors[n_neighbors] = other;
                     n_neighbors += 1;
-                    if (n_neighbors >= max_neighbors) break;    // end early if we've achieved 8 closest visible people.
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
                     continue;
                 }
                 Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
@@ -217,7 +181,7 @@ namespace RVO {
                 if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
                     neighbors[n_neighbors] = other;
                     n_neighbors += 1;
-                    if (n_neighbors >= max_neighbors) break;    // end early if we've achieved 8 closest visible people.
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
                 }
             }
             // else if case: if we aren't colliding yet and we still find someone, then we have to add them as an RVO neighbor
@@ -225,7 +189,7 @@ namespace RVO {
                 if (!simulate_vision) {
                     neighbors[n_neighbors] = other;
                     n_neighbors += 1;
-                    if (n_neighbors >= max_neighbors) break;    // end early if we've achieved 8 closest visible people.
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
                     continue;
                 }
                 Vector2Int a = new Vector2Int(Mathf.RoundToInt(transform.forward.x*10), Mathf.RoundToInt(transform.forward.z*10));
@@ -234,7 +198,7 @@ namespace RVO {
                 if (dot * 4 > -1 * (a.magnitude * b.magnitude)) {
                     neighbors[n_neighbors] = other;
                     n_neighbors += 1;
-                    if (n_neighbors >= max_neighbors) break;    // end early if we've achieved 8 closest visible people.
+                    if (n_neighbors >= 8) break;    // end early if we've achieved 8 closest visible people.
                 }
             }
             */
@@ -259,24 +223,19 @@ namespace RVO {
         num_neighbors = n_neighbors;
     }
 
-    public virtual void Processing(float deltaTime) {    
-        // By default, set the new velocity to our desired velocity
-        new_velocity = desired_velocity;
+    public virtual void Processing() {
+        optimal_velocity = desired_velocity;
 
-        // If we have don't have neighbors, just go with default optimal velocity
+        // If we have neighbors, identify optimal velocity using RVO
         if (num_neighbors == 0) return;
 
-        // Calculte the side preference, used later in side bias during optimal direction calcualtion
-        float2 sb = new(transform.forward.z * side_bias_sign, -transform.forward.x * side_bias_sign);
-
         // Update candidate directions with the current desired velocity
-        for (int i = 1; i <= candidate_directions_template.Count; i++) {
-            candidate_directions[i] = candidate_directions_template[i-1];
+        for (int i = 0; i < candidate_directions_template.Count; i++) {
+            candidate_directions[i] = candidate_directions_template[i];
             candidate_direction_results[i] = new CandidateDirection(i);
         }
-        candidate_directions[0] = (float2)desired_velocity.ToVector2();
-        candidate_direction_results[0] = new CandidateDirection(0);
-
+        candidate_directions[candidate_directions_template.Count] = (float2)desired_velocity.ToVector2();
+        candidate_direction_results[candidate_directions_template.Count] = new CandidateDirection(candidate_directions_template.Count);
         // Initialize the job
         direction_job = new DirectionJob() {
             candidate_directions = candidate_directions,
@@ -285,45 +244,36 @@ namespace RVO {
             position = (float2)transform.position.ToVector2(),
             current_velocity = (float2)current_velocity.ToVector2(),
             desired_velocity = (float2)desired_velocity.ToVector2(),
-            side_bias = sb,
             max_speed = max_speed,
             radius = spatial_radius,
             safety_factor = safety_factor,
             num_neighbors = num_neighbors,
             colliding = colliding,
-            side_bias_factor = side_bias_factor,
-            dt = deltaTime,
+            dt = Time.deltaTime,
             candidate_direction_results = candidate_direction_results
         };
+        /*
+        direction_job_handler = direction_job.Schedule(candidate_directions_template.Count+1, 128);
+        JobHandle.ScheduleBatchedJobs();
+        direction_job_handler.Complete();
+        */
         direction_job.Run(candidate_directions.Length);
 
         // Get the penalties as a new array
         candidate_rankings = direction_job.candidate_direction_results.ToArray();
         Array.Sort(candidate_rankings, (v1,v2)=>v1.penalty.CompareTo(v2.penalty));
-        new_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
+        optimal_velocity = candidate_directions[candidate_rankings[0].index].ToVector3();
     }
 
     public virtual void Movement(float deltaTime) {
-        // Based on new velocity and current velocity, set the current velocity
-        float dv = (new_velocity - current_velocity).magnitude;
-        if (dv < acceleration * deltaTime) current_velocity = new_velocity;
-        else current_velocity = (1f - (acceleration * deltaTime / dv)) * current_velocity + (acceleration * deltaTime / dv) * new_velocity;
-        
-        // Update the generator
-        if (Generator.current != null) Generator.current.UpdateAgent(agent_index);
-
-        // Translate our agent. Set to destination if reached our destination
+        Vector3 diff_pos = destination - transform.position;
+        distance_to_destination = diff_pos.magnitude;
+        reached_destination = distance_to_destination <= stopping_distance;
         if (reached_destination) {
             transform.position = destination;
-        } else {
-            transform.position += current_velocity * deltaTime;
+            return;
         }
 
-        // Rotate our agent, as long as current_velocity is not Vector3.zero
-        if (current_velocity.magnitude > 0f) transform.rotation = Quaternion.LookRotation(current_velocity);
-
-
-        /*
         // Rotate the agent to face the direction of the optimal velocity,. but only if the optimal velocity isn't Vector3.zero
         Quaternion target_rotation = (current_velocity != Vector3.zero) 
             ? Quaternion.LookRotation(current_velocity)
@@ -333,7 +283,6 @@ namespace RVO {
         // Rotate towards the target rotation but do not overshoot
         if (angular_step > angle_difference) transform.rotation = target_rotation;
         else transform.rotation = Quaternion.RotateTowards(transform.rotation, target_rotation, angular_step);
-        */
 
         // Calculate the difference between our current velocity and the optimal velocity
         /*
@@ -354,6 +303,14 @@ namespace RVO {
             translate_velocity = current_velocity;
         }
         */
+        Vector3 translate_velocity;
+        float dv = (current_velocity - prev_current_velocity).magnitude;
+        if (dv < acceleration * deltaTime) translate_velocity = current_velocity;
+        else translate_velocity = (1f - (acceleration * deltaTime / dv)) * prev_current_velocity + (acceleration * deltaTime / dv) * current_velocity;
+
+        // Translate the agent
+        transform.position += translate_velocity * deltaTime;
+        prev_current_velocity = translate_velocity;
     }
 
     protected virtual void OnApplicationQuit() {
@@ -383,14 +340,12 @@ namespace RVO {
         [ReadOnly] public float2 position;  // 2D position in world space
         [ReadOnly] public float2 current_velocity;  // Thecurrent 2D velocity in world space
         [ReadOnly] public float2 desired_velocity;  // The desired velocity this agent wants to move towards
-        [ReadOnly] public float2 side_bias;         // The side bias of the agent based on forward direction
         [ReadOnly] public float max_speed;      // max speed the agent wants to move
         [ReadOnly] public float radius;         // Radius of this agent
         [ReadOnly] public float safety_factor;  // The agent's willingness to be safe.
         [ReadOnly] public int num_neighbors;    // Number of detected neighbors
         [ReadOnly] public bool colliding;       // Are we currently colliding with any neighbors?
-        [ReadOnly] public float side_bias_factor;    // The affect of side bias on the cost calculation
-        [ReadOnly] public float dt;             // The delta time we're dealing with
+        [ReadOnly] public float dt;
         // Outputs
         [WriteOnly] public NativeArray<CandidateDirection> candidate_direction_results;
 
@@ -434,15 +389,13 @@ namespace RVO {
         public void Execute(int index) {
 
             // What's the direction we're checking now?
-            // Rotate the candidate to fit the orientation of the current forward direction
             float2 candidate_direction = candidate_directions[index];
 
             // Calculate the distance cost and time cost
             float distance_cost = 0f;
             if (!colliding) distance_cost = math.length(candidate_direction - desired_velocity);
-            //if (!colliding) distance_cost = math.length(candidate_direction - current_v);
             float time_cost = 1000000f;
-            float2 _time = new(0f,0f);
+            float discr = -10;
 
             // We have to iterate through all neighbors
             for(int i = 0; i < num_neighbors; i++) {
@@ -457,14 +410,13 @@ namespace RVO {
                 float2 time = TimeToCollision(position, translate_vb_va, other.position, mink_sum, colliding);
 
                 // mod time to collision for this current agent with additional metrics, based on if we're colliding or not
-                //if (colliding) ct = -math.ceil(time[0] / dt) - (absSq(candidate_direction)/sq(max_speed));
-                if (colliding) ct = -(time[0]/dt) - (absSq(candidate_direction)/sq(max_speed));
+                if (colliding) ct = -(time[0] / dt) - (absSq(candidate_direction)/sq(max_speed));
                 else ct = time[0];
 
                 // If the current time to collision is less than the time cost, then we set it
-                if (ct < time_cost) {
+                if (ct < time_cost+1) {
                     time_cost = ct;
-                    _time = time;
+                    discr = time[1];
                 }
 
                 /*
@@ -519,14 +471,11 @@ namespace RVO {
                 */
             }
 
-            // Calculate side bias cost
-            float side_bias_cost = math.length(math.normalize(candidate_direction) - side_bias) * side_bias_factor;
-
             // ultimately, after considering all neighbor,s calculate the final penalty cost
-            float penalty = safety_factor / time_cost + distance_cost + side_bias_cost;
+            float penalty = safety_factor / time_cost + distance_cost;
 
             // output result
-            candidate_direction_results[index] = new CandidateDirection(index, distance_cost, time_cost, _time, penalty);
+            candidate_direction_results[index] = new CandidateDirection(index, distance_cost, time_cost, discr, penalty);
         }
     }
 }

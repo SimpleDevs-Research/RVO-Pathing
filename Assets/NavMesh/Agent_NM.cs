@@ -36,7 +36,7 @@ public class Agent_NM : Agent
     // Note: NavMesh does not expose the number of avoidance obstacles it is considering for each agent.
     // We still need to call observe to measure the number of nearby agents.
     // the `GenerateAgents` parent needs to know an agent's current and optimal velocity for successful reporting. So we need a modified version of `Processing`
-    public override void Processing(float deltaTime) {
+    public override void Processing() {
         // Need to determine the optimal velocity here.
         // In this case, the optimal velocity will be what we extract from navmeshagent
         // It's unclear whether the NavMeshAgent's `desiredVelocity` is the velocity it WANTS to move in (aka literally its desired vel.)...

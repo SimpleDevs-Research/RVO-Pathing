@@ -237,28 +237,25 @@ MonoBehaviour:
   generate_destination_on_start: 1
   destination: {x: 0, y: 0, z: 0}
   agent_index: 0
-  num_candidate_directions: 31
+  num_candidate_directions: 24
   multi_speed_candidates: 1
   min_speed: 0.5
   max_speed: 1.5
   speed_step: 0.25
   visual_radius: 5
-  spatial_radius: 0.5
+  spatial_radius: 0.25
   stopping_distance: 0.05
-  safety_factor: 0.5
+  safety_factor: 1
   max_neighbors: 8
   current_velocity: {x: 0, y: 0, z: 0}
   desired_direction: {x: 0, y: 0, z: 0}
   desired_velocity: {x: 0, y: 0, z: 0}
   optimal_velocity: {x: 0, y: 0, z: 0}
-  new_velocity: {x: 0, y: 0, z: 0}
-  side_bias: 1
-  side_bias_factor: 0
+  prev_current_velocity: {x: 0, y: 0, z: 0}
   simulate_vision: 1
   acceleration: 5
   angular_speed: 180
   draw_gizmos: 0
-  side_bias_sign: 0
   distance_to_destination: 0
   reached_destination: 1
   colliding: 0
