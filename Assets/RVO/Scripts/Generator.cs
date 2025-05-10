@@ -169,25 +169,20 @@ namespace RVO {
             query = new KDQuery();
         }
 
+        public virtual void UpdateAgent(int i) {
+            // Update our arrays
+            agent_positions[i] = agent_components[i].position;
+            agent_data[i].Update(agent_components[i].position, agent_components[i].current_velocity);
+            if (record_data) AddAgentToWriter(Time.frameCount, i);
+        }
+
         protected virtual void LateUpdate() {
             // Calculate current frame count
             int frame = Time.frameCount;
-            int destination_count = 0;
 
-            // Update each agent's data
-            // We do it here to enable the update loop in each independent agent to conduct Observation and Processing
-            for(int i = 0; i < agent_positions.Length; i++) {
-                // Let our agent know they can move in the current velocity in their component
-                //agent_components[i].current_velocity = agent_components[i].optimal_velocity;
-                
-                // Update our arrays
-                agent_positions[i] = agent_components[i].position;
-                agent_data[i].Update(agent_components[i].position, agent_components[i].current_velocity);
-                //agent_components[i].Movement();
-                
-                // Record our data
-                if (record_data) AddAgentToWriter(frame, i);
-                
+            // Update each agent's data records, and check if all our agents reached the destination
+            int destination_count = 0;
+            for(int i = 0; i < agent_positions.Length; i++) {                                
                 // Caching our trajectory data if needed
                 if (!agent_components[i].reached_destination) {
                     if (cache_trajectories) agent_trajectories[i].points.Add(new Vector3(agent_positions[i].x, agent_components[i].current_velocity.magnitude, agent_positions[i].z));
