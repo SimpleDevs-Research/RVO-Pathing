@@ -41,12 +41,16 @@ public class DebugCosts : MonoBehaviour
     public float max_speed = 1.5f;
     public float deltaTime = 0.05f;
     public float safety_factor = 1f;
+    public float inertia_factor = 1f;
 
     [Header("Agent A Results")]
+    public Vector3 candidate_direction;
     public bool colliding = false;
     public float distance_cost = 0f;
     public float time_cost = 0;
+    public float continuity_cost = 0f;
     public float discr = 0;
+    public float continuity_diff = 0f;
     public float penalty = 0f;
 
     void Update() {
@@ -64,13 +68,13 @@ public class DebugCosts : MonoBehaviour
         colliding = (distance < rA+rB);
 
         // For now, the candidate 
-        Vector3 candidate_direction = vA_ref.position - pA;
+        candidate_direction = vA_ref.position - pA;
         
         // Calculate the distance cost and time cost
         distance_cost = 0f;
         if (!colliding) distance_cost = (candidate_direction - desired_vA).magnitude;
         time_cost = 1000000f;
-        discr = -10;
+        discr = 0;
 
         // Priming the time to collision for this Agent B, which we consider a neighbor
         float ct;
@@ -81,17 +85,19 @@ public class DebugCosts : MonoBehaviour
         Vector2 time = TimeToCollision(pA, translate_vb_va, pB, mink_sum, colliding);
 
         // mod time to collision for this current agent with additional metrics, based on if we're colliding or not
-        if (colliding) ct = -Mathf.Ceil(time.x / deltaTime) - (absSq(candidate_direction)/sq(max_speed));
+        if (colliding) ct = -(time.x / deltaTime) - (absSq(candidate_direction)/sq(max_speed));
         else ct = time.x;
 
         // If the current time to collision is less than the time cost, then we set it
-        if (ct < time_cost) {
             time_cost = ct;
             discr = time.y;
-        }
+        
+        // Add an inertia cost
+        continuity_diff = Vector3.Distance(candidate_direction, vA);
+        continuity_cost = continuity_diff * inertia_factor;
 
         // ultimately, after considering all neighbor,s calculate the final penalty cost
-        penalty = safety_factor / time_cost + distance_cost;
+        penalty = safety_factor / time_cost + distance_cost + continuity_cost;
     }
 
     // helper: calcualte determinatne of two float2's
@@ -114,6 +120,7 @@ public class DebugCosts : MonoBehaviour
         float time;
 
         float discr = -sq(det(Vab, ba)) + sq_diam * Vab2;
+        // They WILL collide. Usually occurs when two agents are moving into a direct collision
         if (discr > 0f) {
             if (collision) {
                 time = (mult(Vab, ba) + Mathf.Sqrt(discr)) / Vab2;
@@ -122,10 +129,14 @@ public class DebugCosts : MonoBehaviour
                 time = (mult(Vab, ba) - Mathf.Sqrt(discr)) / Vab2;
                 if (time < 0) time = 1000000f;
             }
-        } else {
+        } 
+        // Their velocities will not lead to a collision.
+        else {
+            // let's do another equation: will my current trajectory lead 
             if (collision) time = -1000000f;
             else time = 1000000f;
         }
+        
         return new Vector2(time, discr);
     }
 }

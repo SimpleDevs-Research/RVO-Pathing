@@ -243,9 +243,10 @@ MonoBehaviour:
   max_speed: 1.5
   speed_step: 0.25
   visual_radius: 5
-  spatial_radius: 0.25
+  spatial_radius: 0.5
   stopping_distance: 0.05
-  safety_factor: 1
+  responsibility_factor: 0.5
+  safety_factor: 0.5
   max_neighbors: 8
   current_velocity: {x: 0, y: 0, z: 0}
   desired_direction: {x: 0, y: 0, z: 0}
@@ -255,6 +256,7 @@ MonoBehaviour:
   simulate_vision: 1
   acceleration: 5
   angular_speed: 180
+  inertia_factor: 0
   draw_gizmos: 0
   distance_to_destination: 0
   reached_destination: 1

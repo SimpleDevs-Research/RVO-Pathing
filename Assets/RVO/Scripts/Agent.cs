@@ -30,6 +30,7 @@ namespace RVO {
     public float visual_radius = 0.5f;
     public float spatial_radius = 3f;
     public float stopping_distance = 0.05f;
+    public float responsibility_factor = 0.5f;
     public float safety_factor = 1f;
     public int max_neighbors = 8;
     [HideInInspector]   public Vector3 current_velocity;
@@ -45,6 +46,7 @@ namespace RVO {
     public bool simulate_vision = true;
     public float acceleration = 1.5f;
     public float angular_speed = 60f;
+    public float inertia_factor = 1f;
 
     [Header("=== Gizmos ===")]
     public bool draw_gizmos = false;
@@ -246,7 +248,9 @@ namespace RVO {
             desired_velocity = (float2)desired_velocity.ToVector2(),
             max_speed = max_speed,
             radius = spatial_radius,
+            responsibility_factor = responsibility_factor,
             safety_factor = safety_factor,
+            inertia_factor = inertia_factor,
             num_neighbors = num_neighbors,
             colliding = colliding,
             dt = Time.deltaTime,
@@ -342,7 +346,9 @@ namespace RVO {
         [ReadOnly] public float2 desired_velocity;  // The desired velocity this agent wants to move towards
         [ReadOnly] public float max_speed;      // max speed the agent wants to move
         [ReadOnly] public float radius;         // Radius of this agent
+        [ReadOnly] public float responsibility_factor;  // the agent's sense of shared responsibility
         [ReadOnly] public float safety_factor;  // The agent's willingness to be safe.
+        [ReadOnly] public float inertia_factor; // How closely do we want to move in our current velocity?
         [ReadOnly] public int num_neighbors;    // Number of detected neighbors
         [ReadOnly] public bool colliding;       // Are we currently colliding with any neighbors?
         [ReadOnly] public float dt;
@@ -395,7 +401,10 @@ namespace RVO {
             float distance_cost = 0f;
             if (!colliding) distance_cost = math.length(candidate_direction - desired_velocity);
             float time_cost = 1000000f;
-            float discr = -10;
+            float discr = 0;
+
+            // Add additional inertia cost to ensure that we consider our current velocity too.
+            float inertia_cost = math.length(candidate_direction - current_velocity) * inertia_factor;
 
             // We have to iterate through all neighbors
             for(int i = 0; i < num_neighbors; i++) {
@@ -405,7 +414,7 @@ namespace RVO {
                 float ct;
 
                 // calculate time to collision for this agent
-                float2 translate_vb_va = 2f * candidate_direction - current_velocity - other.velocity;
+                float2 translate_vb_va = (1f/responsibility_factor)*candidate_direction - (1f-(1f/responsibility_factor))*current_velocity - other.velocity;
                 float mink_sum = radius + other.radius;
                 float2 time = TimeToCollision(position, translate_vb_va, other.position, mink_sum, colliding);
 
@@ -472,7 +481,7 @@ namespace RVO {
             }
 
             // ultimately, after considering all neighbor,s calculate the final penalty cost
-            float penalty = safety_factor / time_cost + distance_cost;
+            float penalty = safety_factor / time_cost + distance_cost + inertia_cost;
 
             // output result
             candidate_direction_results[index] = new CandidateDirection(index, distance_cost, time_cost, discr, penalty);
