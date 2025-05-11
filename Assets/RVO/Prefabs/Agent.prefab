@@ -243,10 +243,10 @@ MonoBehaviour:
   max_speed: 1.5
   speed_step: 0.25
   visual_radius: 5
-  spatial_radius: 0.5
+  spatial_radius: 0.25
   stopping_distance: 0.05
   responsibility_factor: 0.5
-  safety_factor: 0.5
+  safety_factor: 1
   max_neighbors: 8
   current_velocity: {x: 0, y: 0, z: 0}
   desired_direction: {x: 0, y: 0, z: 0}
