@@ -203,20 +203,6 @@ MonoBehaviour:
   early_terminate_app: 1
   fps_smoothing_factor: 0.25
   record_data: 0
-  agents_writer:
-    fileName: 
-    dirName: 
-    writeUnixTime: 1
-    append_zero_to_filename: 0
-    columns: []
-    filePath: 
-  fps_writer:
-    fileName: 
-    dirName: 
-    writeUnixTime: 1
-    append_zero_to_filename: 0
-    columns: []
-    filePath: 
   current_fps: 0
   smoothed_fps: 0
   draw_bounds: 0
