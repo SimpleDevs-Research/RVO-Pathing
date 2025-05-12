@@ -11,50 +11,51 @@ namespace RVO {
         [Header("=== Circular Arrangement Properties ===")]
         public float arrangement_radius = 10f;
 
-        public override void Generate() {
-            // In this one, the number of agents is equal to the number of stored trajectories
-            num_agents = agent_trajectories.Length;
+        protected override void GenerateAgent(int agent_index) {
             
-            // Initialize the lists for KDTree
-            agent_positions = new Vector3[num_agents];
-            agent_components = new Agent[num_agents];
-            agent_data = new AgentData[num_agents];
+            // This overrides the base `GenerateAgent` method of the original `Generator` script.
+            // In this implementation, we pre-calculate the vector of the start point based on agent index, then we set the destination to the opposite side of the circular arrangement.
+            // The only inspector parameter unique to this is the `arrangement radius`, which just dictates how big the circular arrangement is.
 
-            // Want to build a ciruclar arrangement here
-            List<float2> arrangement_starts = GenerateDirections(num_agents, arrangement_radius);
-            Vector3 arrangement_centroid = new Vector3(bounds.x, 0f, bounds.y) / 2f;
+            // Based on bounds, determine the origin point of the circular arrangement
+            Vector3 centroid = new Vector3(bounds.x, 0f, bounds.y) / 2f;
 
-            // Generate each agent individually
-            for(int i = 0; i < agent_trajectories.Length; i++) {
+            // Calculate the directional ray from the centroid to the start position of this agent
+            float angle_step = 2f * Mathf.PI / num_agents;
+            float theta = agent_index * angle_step;
+            float x = Mathf.Sin(theta);
+            float y = Mathf.Cos(theta);
+            Vector3 start_ray = new Vector3(arrangement_radius*x, 0f, arrangement_radius*y);
 
-                StartDestinationPair sdp = agent_trajectories[i];
-                float2 arrangement_start_direction = arrangement_starts[i];
-                Vector3 arr_direction = new Vector3(arrangement_start_direction[0], 0f, arrangement_start_direction[1]);
+            // Determine the start and end point based on start_ray
+            Vector3 pos = centroid + start_ray;
+            Vector3 dest = centroid - start_ray;
 
-                // Generate random position as start point
-                Vector3 start_point = arrangement_centroid + arr_direction;
-                Vector3 end_point = arrangement_centroid - arr_direction;
-                
-                // Instantiate agent. If the agent wants to move themselves, then we leave it up to the agent prefab instance itself.
-                Agent ps = Instantiate(agent_prefab, start_point, Quaternion.identity) as Agent;
-                ps.transform.parent = agent_parent;
-                ps.agent_index = i;
-                ps.gameObject.name = $"Agent {i}";
-                ps.generate_destination_on_start = false;
-                ps.SetDestination(end_point);
+            // Now we proceed with the original script
+            Vector3 diff = dest - pos;
+            Vector3 forward = (diff.sqrMagnitude == 0f) ? Vector3.right : diff.normalized;
 
-                // Initialize Agent data
-                AgentData ped = new AgentData(i, start_point, Vector3.zero, ps.spatial_radius);
-
-                // Add to agent_positions and agent_data
-                agent_positions[i] = start_point;
-                agent_components[i] = ps;
-                agent_data[i] = ped;
+            // Step 2: Populate our native arrays with these details. Note that we default velocity as a zero vector. 
+            //          We also assume all agents have the same spatial radius
+            positions[agent_index] = pos.ToVector2();
+            velocities[agent_index] = Vector2.zero;
+            //radii[agent_index] = spatial_radius;
+            destinations[agent_index] = dest.ToVector2();
+            // We use a nested for loop because neighbor_indices occupy a set range of spaces in the `neighbor_indices` nativearray buffer.
+            for(int j = 0; j < max_neighbors; j++) {
+                neighbor_indices[agent_index*max_neighbors+j] = agent_index;
+                //is_colliding[agent_index*max_neighbors+j] = false;
             }
+            num_neighbors[agent_index] = 0;
+            new_velocities[agent_index] = Vector2.zero;
+            reached_destination[agent_index] = false;
 
-            // Initialize our KDTree and Query
-            tree = new KDTree(agent_positions, 32);
-            query = new KDQuery();
+            // Step 3: Generate agents to represent these in physical world space
+            GameObject go = Instantiate(agent_prefab, pos, Quaternion.LookRotation(forward));
+            Transform t = go.transform;
+            t.parent = agent_parent;
+            agent_transforms[agent_index] = t;
+            agent_positions[agent_index] = pos;
         }
     }
 }

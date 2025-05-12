@@ -168,75 +168,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agent_parent: {fileID: 1976767657}
-  agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
-  randomize_starts: 0
-  randomize_ends: 0
+  agent_prefab: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   scene_cam: {fileID: 963194227}
   bounds: {x: 10, y: 10}
-  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  cache_trajectories: 1
-  agent_trajectories:
-  - name: 
-    start: {x: 2.5, y: 0, z: 0.75}
-    end: {x: 17.5, y: 0, z: 0.75}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  early_terminate_app: 0
+  num_agents: 12
+  destination_buffer: 0.05
+  max_speed: 1.5
+  acceleration: 5
+  num_candidate_directions: 24
+  max_neighbors: 8
+  visual_radius: 5
+  spatial_radius: 0.25
+  responsibility_factor: 0.5
+  safety_factor: 1
+  inertia_factor: 0
+  early_terminate_app: 1
   fps_smoothing_factor: 0.25
   record_data: 0
   agents_writer:
@@ -272,12 +218,9 @@ MonoBehaviour:
   current_fps: 0
   smoothed_fps: 0
   draw_bounds: 1
-  draw_start_end: 0
-  draw_paths: 1
-  num_agents: 8
+  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  agent_transforms: []
   agent_positions: []
-  agent_components: []
-  agent_data: []
   arrangement_radius: 4
 --- !u!1 &963194225
 GameObject:

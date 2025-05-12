@@ -2,11 +2,15 @@ using UnityEngine;
 using UnityEngine.AI;
 using RVO;
 
-public class Agent_NM : Agent
+public class Agent_NM : MonoBehaviour
 {
     [Header("=== Nav Mesh ===")]
     public NavMeshAgent nm_agent;
-    [HideInInspector] public Vector3 prev_position;
+
+    [Header("=== READ ONLY ===")]
+    public Vector3 destination = Vector3.zero;
+    public float distance_to_destination = 0f;
+    public Vector3 prev_position;
 
     // This time, we update our NavMeshAgent component with our properties
     protected virtual void Awake() {
@@ -17,13 +21,6 @@ public class Agent_NM : Agent
             nm_agent = GetComponent<NavMeshAgent>();
         }
 
-        // Set equivalent properties
-        nm_agent.speed = this.max_speed;
-        nm_agent.angularSpeed = this.angular_speed;
-        nm_agent.acceleration = this.acceleration;
-        nm_agent.stoppingDistance = this.stopping_distance*0.5f;
-        nm_agent.radius = this.spatial_radius;
-
         // Custom properties
         nm_agent.autoBraking = false;
         nm_agent.autoRepath = true;
@@ -33,31 +30,21 @@ public class Agent_NM : Agent
         distance_to_destination = 1000f;
     }
 
-    // Note: NavMesh does not expose the number of avoidance obstacles it is considering for each agent.
-    // We still need to call observe to measure the number of nearby agents.
-    // the `GenerateAgents` parent needs to know an agent's current and optimal velocity for successful reporting. So we need a modified version of `Processing`
-    public override void Processing() {
-        // Need to determine the optimal velocity here.
-        // In this case, the optimal velocity will be what we extract from navmeshagent
-        // It's unclear whether the NavMeshAgent's `desiredVelocity` is the velocity it WANTS to move in (aka literally its desired vel.)...
-        // ... or if it's the velocity after avoidance is considered
-        desired_velocity = nm_agent.desiredVelocity;
-        optimal_velocity = nm_agent.velocity;
-    }
-
+    /*
     // Note: We don't need to actually move the agent in this implementation
     // However, we still need to update `current_velocity`.
-    public override void Movement(float deltaTime) {
+    public virtual void Movement(float deltaTime) {
         // Update our record of our current velocity
         current_velocity = (transform.position - prev_position) / deltaTime;
         prev_position = transform.position;
 
         // Inform if we've reached our destination, according to NavMeshAgent
         distance_to_destination = (destination - transform.position).magnitude;
-        reached_destination = distance_to_destination <= this.stopping_distance; // * 2f && (!nm_agent.hasPath || nm_agent.velocity.sqrMagnitude == 0f);
+        reached_destination = distance_to_destination <= nm_agent.stoppingDistance; // * 2f && (!nm_agent.hasPath || nm_agent.velocity.sqrMagnitude == 0f);
     }
+    */
 
-    public override void SetDestination(Vector3 d) {
+    public virtual void SetDestination(Vector3 d) {
         destination = d;
         nm_agent.SetDestination(d);
         distance_to_destination = nm_agent.remainingDistance;
