@@ -249,13 +249,13 @@ namespace RVO {
             var rvo_job = new RVOJobParallelFor() {
                 positions = positions,
                 velocities = velocities,
-                //radii = radii,
                 destinations = destinations,
                 neighbor_indices = neighbor_indices,
                 num_neighbors = num_neighbors,
                 //is_colliding = is_colliding,
                 // For now, assume equal radius size among all agents
                 deltaTime = deltaTime,
+                radius = spatial_radius,
                 max_speed = max_speed,
                 num_directions = num_candidate_directions,
                 max_neighbors = max_neighbors,
@@ -446,14 +446,14 @@ namespace RVO {
                 // Given the candidate velocity, iterate through our neighbors
                 for(int j = 0; j < n_neighbors; j++) {
                     // Get the position and velocity of the other agent
-                    int neighbor_index = neighbor_indices[index * max_neighbors + j];
-                    Vector2 pB = positions[neighbor_index];
-                    Vector2 vB = velocities[neighbor_index];
+                    int neighbor_indices_index = index * max_neighbors + j;
+                    Vector2 pB = positions[neighbor_indices[neighbor_indices_index]];
+                    Vector2 vB = velocities[neighbor_indices[neighbor_indices_index]];
                     // bool colliding = is_colliding[neighbor_index];
                     // calculate time to collision for this agent
                     Vector2 translate_vb_va = (1f/responsibility_factor)*candidate_velocity - (1f-(1f/responsibility_factor))*vA - vB;
                     //float mink_sum = radii[index] + radii[neighbor_index];
-                    float mink_sum = radius * 2f;
+                    float mink_sum = 2f * radius;
                     float time = TimeToCollision(pA, translate_vb_va, pB, mink_sum);
                     //float time = TimeToCollision(pA, translate_vb_va, pB, mink_sum, colliding);
                     ct = time;
