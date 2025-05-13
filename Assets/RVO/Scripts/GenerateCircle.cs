@@ -11,7 +11,7 @@ namespace RVO {
         [Header("=== Circular Arrangement Properties ===")]
         public float arrangement_radius = 10f;
 
-        protected override void GenerateAgent(int agent_index) {
+        protected override void GenerateAgent(int agent_index, ref Transform[] _transforms) {
             
             // This overrides the base `GenerateAgent` method of the original `Generator` script.
             // In this implementation, we pre-calculate the vector of the start point based on agent index, then we set the destination to the opposite side of the circular arrangement.
@@ -37,24 +37,24 @@ namespace RVO {
 
             // Step 2: Populate our native arrays with these details. Note that we default velocity as a zero vector. 
             //          We also assume all agents have the same spatial radius
-            positions[agent_index] = pos.ToVector2();
-            velocities[agent_index] = Vector2.zero;
+            positions[agent_index] = pos;
+            velocities[agent_index] = Vector3.zero;
             //radii[agent_index] = spatial_radius;
-            destinations[agent_index] = dest.ToVector2();
+            destinations[agent_index] = dest;
             // We use a nested for loop because neighbor_indices occupy a set range of spaces in the `neighbor_indices` nativearray buffer.
             for(int j = 0; j < max_neighbors; j++) {
                 neighbor_indices[agent_index*max_neighbors+j] = agent_index;
                 //is_colliding[agent_index*max_neighbors+j] = false;
             }
             num_neighbors[agent_index] = 0;
-            new_velocities[agent_index] = Vector2.zero;
+            new_velocities[agent_index] = Vector3.zero;
             reached_destination[agent_index] = false;
 
             // Step 3: Generate agents to represent these in physical world space
             GameObject go = Instantiate(agent_prefab, pos, Quaternion.LookRotation(forward));
             Transform t = go.transform;
             t.parent = agent_parent;
-            agent_transforms[agent_index] = t;
+            _transforms[agent_index] = t;
             agent_positions[agent_index] = pos;
         }
     }

@@ -167,126 +167,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81f4d4230bbc0425182e4630c0ee6f7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agent_parent: {fileID: 2122366914}
-  agent_prefab: {fileID: 3639217476018917511, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
-  randomize_starts: 0
-  randomize_ends: 0
+  agent_parent: {fileID: 1976767657}
+  agent_prefab: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   scene_cam: {fileID: 963194227}
-  bounds: {x: 15, y: 8.5}
-  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  cache_trajectories: 1
-  agent_trajectories:
-  - name: L1
-    start: {x: 2.5, y: 0, z: 1.25}
-    end: {x: 12.5, y: 0, z: 1.25}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: L2
-    start: {x: 2.5, y: 0, z: 2.25}
-    end: {x: 12.5, y: 0, z: 2.25}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: L3
-    start: {x: 2.5, y: 0, z: 3.25}
-    end: {x: 12.5, y: 0, z: 3.25}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: L4
-    start: {x: 2.5, y: 0, z: 4.25}
-    end: {x: 12.5, y: 0, z: 4.25}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: L5
-    start: {x: 2.5, y: 0, z: 5.25}
-    end: {x: 12.5, y: 0, z: 5.25}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: L6
-    start: {x: 2.5, y: 0, z: 6.26}
-    end: {x: 12.5, y: 0, z: 6.26}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: L7
-    start: {x: 2.5, y: 0, z: 7.25}
-    end: {x: 12.5, y: 0, z: 7.25}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: R1
-    start: {x: 12.5, y: 0, z: 1.25}
-    end: {x: 2.5, y: 0, z: 1.25}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
-    points: []
-  - name: R2
-    start: {x: 12.5, y: 0, z: 2.25}
-    end: {x: 2.5, y: 0, z: 2.25}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
-    points: []
-  - name: R3
-    start: {x: 12.5, y: 0, z: 3.25}
-    end: {x: 2.5, y: 0, z: 3.25}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
-    points: []
-  - name: R4
-    start: {x: 12.5, y: 0, z: 4.25}
-    end: {x: 2.5, y: 0, z: 4.25}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
-    points: []
-  - name: R5
-    start: {x: 12.5, y: 0, z: 5.25}
-    end: {x: 2.5, y: 0, z: 5.25}
-    color: {r: 0.98039216, g: 0.18039216, b: 0.20392157, a: 1}
-    points: []
-  - name: 
-    start: {x: 12.5, y: 0, z: 6.26}
-    end: {x: 2.5, y: 0, z: 6.26}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
-    points: []
-  - name: 
-    start: {x: 12.5, y: 0, z: 7.25}
-    end: {x: 2.5, y: 0, z: 7.25}
-    color: {r: 0.9811321, g: 0.1804913, b: 0.20377006, a: 1}
-    points: []
-  early_terminate_app: 0
+  floor: {fileID: 1553761265}
+  bounds: {x: 15, y: 15}
+  num_agents: 25
+  destination_buffer: 0.05
+  spawn_orientation: 2
+  bound_edge_buffer: 1
+  max_speed: 1
+  acceleration: 5
+  num_candidate_directions: 24
+  max_neighbors: 8
+  visual_radius: 5
+  spatial_radius: 0.5
+  responsibility_factor: 0.385
+  safety_factor: 1
+  inertia_factor: 0
   fps_smoothing_factor: 0.25
-  record_data: 0
-  agents_writer:
-    fileName: agents
-    dirName: Rows_Aligned
-    writeUnixTime: 0
-    append_zero_to_filename: 0
-    columns:
-    - frame
-    - agent_index
-    - position_x
-    - position_y
-    - forward_x
-    - forward_y
-    - current_velocity_x
-    - current_velocity_y
-    - optimal_velocity_x
-    - optimal_velocity_y
-    - num_neighbors
-    - num_candidate_directions
-    filePath: 
-  fps_writer:
-    fileName: fps
-    dirName: Rows_Aligned
-    writeUnixTime: 0
-    append_zero_to_filename: 0
-    columns:
-    - frame
-    - current_fps
-    - smoothed_fps
-    filePath: 
   current_fps: 0
   smoothed_fps: 0
   draw_bounds: 1
-  draw_start_end: 0
-  draw_paths: 1
-  num_agents: 18
-  agent_positions: []
-  agent_components: []
-  agent_data: []
+  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  agent_penalties: []
+  agent_new_velocities: []
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -372,14 +277,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1257806265
+--- !u!1 &1553761261
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -387,10 +292,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1257806266}
-  - component: {fileID: 1257806269}
-  - component: {fileID: 1257806268}
-  - component: {fileID: 1257806267}
+  - component: {fileID: 1553761265}
+  - component: {fileID: 1553761264}
+  - component: {fileID: 1553761263}
+  - component: {fileID: 1553761262}
   m_Layer: 0
   m_Name: Floor
   m_TagString: Untagged
@@ -398,28 +303,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1257806266
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1257806265}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 7.5, y: 0, z: 4.25}
-  m_LocalScale: {x: 15, y: 8.500002, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
---- !u!64 &1257806267
+--- !u!64 &1553761262
 MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1257806265}
+  m_GameObject: {fileID: 1553761261}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -435,13 +325,13 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &1257806268
+--- !u!23 &1553761263
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1257806265}
+  m_GameObject: {fileID: 1553761261}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -455,7 +345,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 3c9b7a64ace484dbfa23de87c1d92d87, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -477,15 +367,30 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1257806269
+--- !u!33 &1553761264
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1257806265}
+  m_GameObject: {fileID: 1553761261}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &2122366913
+--- !u!4 &1553761265
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553761261}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!1 &1976767656
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -493,7 +398,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2122366914}
+  - component: {fileID: 1976767657}
   m_Layer: 0
   m_Name: Agents
   m_TagString: Untagged
@@ -501,15 +406,15 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2122366914
+--- !u!4 &1976767657
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2122366913}
+  m_GameObject: {fileID: 1976767656}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -522,5 +427,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 95509513}
   - {fileID: 963194228}
-  - {fileID: 1257806266}
-  - {fileID: 2122366914}
+  - {fileID: 1976767657}
+  - {fileID: 1553761265}
