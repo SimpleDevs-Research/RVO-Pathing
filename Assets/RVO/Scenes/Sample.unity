@@ -187,11 +187,11 @@ MonoBehaviour:
   agent_prefab: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   scene_cam: {fileID: 963194227}
   floor: {fileID: 2021910531}
-  bounds: {x: 50, y: 50}
+  bounds: {x: 100, y: 100}
   num_agents: 1000
   destination_buffer: 0.05
   spawn_orientation: 0
-  spawn_distance: 10
+  bound_edge_buffer: 10
   max_speed: 1
   acceleration: 5
   num_candidate_directions: 24
@@ -206,6 +206,8 @@ MonoBehaviour:
   smoothed_fps: 0
   draw_bounds: 0
   bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  agent_penalties: []
+  agent_new_velocities: []
 --- !u!4 &95509513
 Transform:
   m_ObjectHideFlags: 0

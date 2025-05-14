@@ -176,22 +176,22 @@ MonoBehaviour:
   destination_buffer: 0.05
   spawn_orientation: 2
   bound_edge_buffer: 1
-  max_speed: 1
+  max_speed: 1.5
   acceleration: 5
   num_candidate_directions: 24
   max_neighbors: 8
   visual_radius: 5
-  spatial_radius: 0.25
+  spatial_radius: 0.125
   responsibility_factor: 0.5
   safety_factor: 1
   inertia_factor: 0
-  simulate_vision: 0
-  cone_of_vision_hemisphere: 90
   fps_smoothing_factor: 0.25
   current_fps: 0
   smoothed_fps: 0
   draw_bounds: 1
   bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  agent_penalties: []
+  agent_new_velocities: []
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0

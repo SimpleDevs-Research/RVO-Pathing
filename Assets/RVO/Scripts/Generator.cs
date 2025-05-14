@@ -76,7 +76,7 @@ namespace RVO {
         public NativeArray<int> num_neighbors;
         public NativeArray<bool> is_colliding;
         public NativeArray<float3> new_velocities;
-        public NativeArray<float> penalties;
+        public NativeArray<float2> penalties;
         public NativeArray<bool> reached_destination;
         public TransformAccessArray transforms;
         // Job handles
@@ -87,7 +87,7 @@ namespace RVO {
         protected KDQuery query;
         protected Vector3[] agent_positions;
     
-        public float[] agent_penalties;
+        public float2[] agent_penalties;
         public float3[] agent_new_velocities;
 
         #if UNITY_EDITOR
@@ -149,12 +149,13 @@ namespace RVO {
             destinations = new NativeArray<float3>(num_agents, Allocator.Persistent);
             neighbor_indices = new NativeArray<int>(num_agents*max_neighbors, Allocator.Persistent);
             num_neighbors = new NativeArray<int>(num_agents, Allocator.Persistent);
-            is_colliding = new NativeArray<bool>(num_agents*max_neighbors, Allocator.Persistent);
+            //is_colliding = new NativeArray<bool>(num_agents*max_neighbors, Allocator.Persistent);
+            is_colliding = new NativeArray<bool>(num_agents, Allocator.Persistent);
             new_velocities = new NativeArray<float3>(num_agents, Allocator.Persistent);
-            penalties = new NativeArray<float>(num_agents, Allocator.Persistent);
+            penalties = new NativeArray<float2>(num_agents, Allocator.Persistent);
             reached_destination = new NativeArray<bool>(num_agents, Allocator.Persistent);
             agent_positions = new Vector3[num_agents];
-            agent_penalties = new float[num_agents];
+            agent_penalties = new float2[num_agents];
             agent_new_velocities = new float3[num_agents];
             
             // Step 1b. Initialize temp transforms array, which we'll use to create our TransformAccessArray later
@@ -214,11 +215,12 @@ namespace RVO {
             // We use a nested for loop because neighbor_indices occupy a set range of spaces in the `neighbor_indices` nativearray buffer.
             for(int j = 0; j < max_neighbors; j++) {
                 neighbor_indices[agent_index*max_neighbors+j] = agent_index;
-                is_colliding[agent_index*max_neighbors+j] = false;
+                //is_colliding[agent_index*max_neighbors+j] = false;
             }
+            is_colliding[agent_index] = false;
             num_neighbors[agent_index] = 0;
             new_velocities[agent_index] = Vector3.zero;
-            penalties[agent_index] = 0f;
+            penalties[agent_index] = new float2(0f,0f);
             reached_destination[agent_index] = false;
 
             // Step 3: Generate agents to represent these in physical world space
@@ -227,6 +229,10 @@ namespace RVO {
             t.parent = agent_parent;
             agent_positions[agent_index] = pos;
             _transforms[agent_index] = t;
+
+            // Step 4: if has Agent_Debug, then let it know its agent index
+            Agent_Debug ad = go.GetComponent<Agent_Debug>();
+            if (ad != null) ad.agent_index = agent_index;
         }
 
 
@@ -251,17 +257,28 @@ namespace RVO {
                 QueryRadiusSort(positions[i], visual_radius, ref results);
                 // Process each potential neighbor
                 int n_neighbors = 0;
+                bool colliding = false;
                 for(int j = 0; j < results.Count; j++) {
                     int neighbor_index = results[j].data;                   // What's the neighbor index?
                     if (neighbor_index == i) continue;                      // Skip if ourselves
                     // Check if colliding
-                    neighbor_indices[i*max_neighbors+n_neighbors] = neighbor_index;     // Contribute to our neighbor indices
-                    is_colliding[i*max_neighbors+n_neighbors] = results[j].distance < Mathf.Pow(spatial_radius*2f,2);
-                    n_neighbors += 1;                           // increment n_neighbors
+                    if (results[j].distance < Mathf.Pow(spatial_radius*2f,2)) {
+                        if (!colliding) {
+                            colliding = true;
+                            n_neighbors = 0;        
+                        }
+                        neighbor_indices[i*max_neighbors+n_neighbors] = neighbor_index;     // Contribute to our neighbor indices
+                        n_neighbors += 1;                                                   // Increment n_neighbors
+                    }
+                    else if (!colliding) {
+                        neighbor_indices[i*max_neighbors+n_neighbors] = neighbor_index;     // Contribute to our neighbor indices
+                        n_neighbors += 1;                                                   // Increment n_neighbors
+                    }
                     if (n_neighbors == max_neighbors) break;    // Break immediately if beyond max_neighbors
                 }
                 // Set our num neighbors
                 num_neighbors[i] = n_neighbors;
+                is_colliding[i] = colliding;
             }
         }
 
@@ -421,7 +438,7 @@ namespace RVO {
             
             // The output
             [WriteOnly] public NativeArray<float3> new_velocities;  // The final velocity of an agent
-            [WriteOnly] public NativeArray<float> penalties;        // The penalties of agents' final velocities
+            [WriteOnly] public NativeArray<float2> penalties;        // The penalties of agents' final velocities
 
             // helper: calcualte determinatne of two float2's
             public float det(float3 a, float3 b) { return a.x*b.z - a.z*b.x; }
@@ -456,7 +473,7 @@ namespace RVO {
             }
 
             // helper: process a potential candidate velocity
-            public float CalculatePenalty(int index, float3 candidate_velocity, float3 preferred_velocity, float3 pA, float3 vA, int n_neighbors) {
+            public float2 CalculatePenalty(int index, float3 candidate_velocity, float3 preferred_velocity, float3 pA, float3 vA, int n_neighbors, bool colliding) {
                 // Initialize the distance cost, time cost, and inertia costs
                 float distance_cost = math.length(candidate_velocity - preferred_velocity);
                 float time_cost = 100000f;
@@ -468,9 +485,9 @@ namespace RVO {
                     int neighbor_indices_index = index * max_neighbors + j;
                     float3 pB = positions[neighbor_indices[neighbor_indices_index]];
                     float3 vB = velocities[neighbor_indices[neighbor_indices_index]];
-                    bool colliding = is_colliding[neighbor_indices[neighbor_indices_index]];
+                    //bool colliding = is_colliding[neighbor_indices[neighbor_indices_index]];
                     // calculate time to collision for this agent
-                    float3 translate_vb_va = (1f/responsibility_factor)*candidate_velocity - (1f-(1f/responsibility_factor))*vA - vB;
+                    float3 translate_vb_va = (1f/responsibility_factor)*candidate_velocity + (1f-(1f/responsibility_factor))*vA - vB;
                     //float mink_sum = radii[index] + radii[neighbor_index];
                     float mink_sum = 2f * radius;
                     float time = TimeToCollision(pA, translate_vb_va, pB, mink_sum, colliding);
@@ -480,7 +497,10 @@ namespace RVO {
                     if (ct < time_cost) time_cost = ct;
                 }
                 // Return the final penalty
-                return safety_factor / time_cost + distance_cost + inertia_cost;
+                return new float2(
+                    safety_factor / time_cost + distance_cost + inertia_cost,
+                    time_cost
+                );
             }
 
             public void Execute(int index) {
@@ -488,6 +508,7 @@ namespace RVO {
                 float3 pA = positions[index];
                 float3 vA = velocities[index];
                 int n_neighbors = num_neighbors[index];
+                bool colliding = is_colliding[index];
                 float3 preferred_velocity = math.normalize(destinations[index] - pA) * max_speed;
 
                 // If our n_neighbors is 0... then there's no need to perform the operation.
@@ -499,7 +520,7 @@ namespace RVO {
 
                 // Let's iterate across potential candidate velocities. For now, intitialize a candiate velocity (Vector2) and minimum penalty
                 float3 new_velocity = preferred_velocity;
-                float min_penalty = CalculatePenalty(index, preferred_velocity, preferred_velocity, pA, vA, n_neighbors);
+                float2 min_penalty = CalculatePenalty(index, preferred_velocity, preferred_velocity, pA, vA, n_neighbors, colliding);
 
                 // Use a for loop to iterate across multiple possible velocities
                 float angleStep = 2f * Mathf.PI / num_directions;
@@ -512,9 +533,9 @@ namespace RVO {
                     for (float r = max_speed; r > 0f; r -= 0.1f) {
                         // Determine the candidate velocity
                         float3 candidate_velocity = new float3(r*x, 0f, r*y);
-                        float est_penalty = CalculatePenalty(index, candidate_velocity, preferred_velocity, pA, vA, n_neighbors);
+                        float2 est_penalty = CalculatePenalty(index, candidate_velocity, preferred_velocity, pA, vA, n_neighbors, colliding);
                         // Override the new velocity if the estimated penalty is smaller than the min penalty
-                        if (est_penalty < min_penalty) {
+                        if (est_penalty.x < min_penalty.x) {
                             min_penalty = est_penalty;
                             new_velocity = candidate_velocity;
                         }
@@ -523,7 +544,7 @@ namespace RVO {
 
                 // Ultimately, set the new velocity as... the new velocity with the minimum penalty
                 new_velocities[index] = new_velocity;
-                penalties[index] = math.length(new_velocity);
+                penalties[index] = min_penalty;
             }
         }
 
