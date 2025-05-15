@@ -199,7 +199,7 @@ GameObject:
   - component: {fileID: 7056520964995312517}
   - component: {fileID: 545662937383212991}
   m_Layer: 0
-  m_Name: Agent
+  m_Name: Robot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

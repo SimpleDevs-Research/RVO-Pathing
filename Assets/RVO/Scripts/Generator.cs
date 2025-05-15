@@ -231,7 +231,7 @@ namespace RVO {
             _transforms[agent_index] = t;
 
             // Step 4: if has Agent_Debug, then let it know its agent index
-            Agent_Debug ad = go.GetComponent<Agent_Debug>();
+            Robot ad = go.GetComponent<Robot>();
             if (ad != null) ad.agent_index = agent_index;
         }
 

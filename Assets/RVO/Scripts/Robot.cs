@@ -6,7 +6,7 @@ using UnityEditor;
 #endif
 
 namespace RVO {
-    public class Agent_Debug : MonoBehaviour
+    public class Robot : MonoBehaviour
     {
 
         public int agent_index;
@@ -16,7 +16,7 @@ namespace RVO {
         #if UNITY_EDITOR
         protected void OnDrawGizmosSelected() {
             if (!Application.isPlaying) return;
-            if (!Generator.current == null) return;
+            if (Generator.current == null) return;
             // show neighbors
             Gizmos.color = neighbor_color;
             Vector3 pA = Generator.current.positions[agent_index];

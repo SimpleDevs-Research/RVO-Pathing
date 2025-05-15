@@ -165,121 +165,34 @@ MonoBehaviour:
   m_GameObject: {fileID: 95509511}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 857c81b77048b4a2fb3e5efad5096d4d, type: 3}
+  m_Script: {fileID: 11500000, guid: 81f4d4230bbc0425182e4630c0ee6f7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   agent_parent: {fileID: 1976767657}
-  agent_prefab: {fileID: 2647434045502161628, guid: f98add34777f348a59d1aa3b09d43ddd, type: 3}
-  randomize_starts: 0
-  randomize_ends: 0
+  agent_prefab: {fileID: 327850281619548056, guid: f98add34777f348a59d1aa3b09d43ddd, type: 3}
   scene_cam: {fileID: 963194227}
-  bounds: {x: 10, y: 10}
-  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  cache_trajectories: 1
-  agent_trajectories:
-  - name: 
-    start: {x: 2.5, y: 0, z: 0.75}
-    end: {x: 17.5, y: 0, z: 0.75}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  - name: 
-    start: {x: 2.5, y: 0, z: 2}
-    end: {x: 17.5, y: 0, z: 2}
-    color: {r: 0, g: 0.0004093647, b: 1, a: 1}
-    points: []
-  early_terminate_app: 1
+  floor: {fileID: 1257214904}
+  bounds: {x: 20, y: 20}
+  num_agents: 12
+  destination_buffer: 0.05
+  spawn_orientation: 2
+  bound_edge_buffer: 1
+  max_speed: 2
+  acceleration: 5
+  num_candidate_directions: 16
+  max_neighbors: 8
+  visual_radius: 5
+  spatial_radius: 0.25
+  responsibility_factor: 0.5
+  safety_factor: 1
+  inertia_factor: 0
   fps_smoothing_factor: 0.25
-  record_data: 0
-  agents_writer:
-    fileName: agents
-    dirName: C8-RVO-D16-Vision-MacM1
-    writeUnixTime: 0
-    append_zero_to_filename: 0
-    columns:
-    - frame
-    - agent_index
-    - position_x
-    - position_y
-    - forward_x
-    - forward_y
-    - current_velocity_x
-    - current_velocity_y
-    - optimal_velocity_x
-    - optimal_velocity_y
-    - num_neighbors
-    - num_candidate_directions
-    filePath: 
-  fps_writer:
-    fileName: fps
-    dirName: C8-RVO-DM32-NoVision-MacM1
-    writeUnixTime: 0
-    append_zero_to_filename: 0
-    columns:
-    - frame
-    - current_fps
-    - smoothed_fps
-    - dt
-    filePath: 
   current_fps: 0
   smoothed_fps: 0
   draw_bounds: 1
-  draw_start_end: 0
-  draw_paths: 1
-  num_agents: 8
-  agent_positions: []
-  agent_components: []
-  agent_data: []
-  arrangement_radius: 4
+  bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  agent_penalties: []
+  agent_new_velocities: []
 --- !u!114 &95509516
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -503,8 +416,8 @@ Transform:
   m_GameObject: {fileID: 1257214900}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 5, y: 0, z: 5}
-  m_LocalScale: {x: 10, y: 10, z: 1}
+  m_LocalPosition: {x: 10, y: 0, z: 10}
+  m_LocalScale: {x: 20, y: 20, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

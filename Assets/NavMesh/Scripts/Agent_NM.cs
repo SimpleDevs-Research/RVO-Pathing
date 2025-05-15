@@ -2,32 +2,32 @@ using UnityEngine;
 using UnityEngine.AI;
 using RVO;
 
-public class Agent_NM : MonoBehaviour
+public class NMRobot : Robot
 {
     [Header("=== Nav Mesh ===")]
-    public NavMeshAgent nm_agent;
-
-    [Header("=== READ ONLY ===")]
-    public Vector3 destination = Vector3.zero;
-    public float distance_to_destination = 0f;
-    public Vector3 prev_position;
+    public NavMeshAgent nav_mesh_agent;
 
     // This time, we update our NavMeshAgent component with our properties
-    protected virtual void Awake() {
+    protected virtual void Start() {
         // Ensure that this game object has a NavMeshAgent component
-        if (nm_agent == null) nm_agent = GetComponent<NavMeshAgent>();
-        if (nm_agent == null) {
+        if (nav_mesh_agent == null) nav_mesh_agent = GetComponent<NavMeshAgent>();
+        if (nav_mesh_agent == null) {
             this.gameObject.AddComponent<NavMeshAgent>();
-            nm_agent = GetComponent<NavMeshAgent>();
+            nav_mesh_agent = GetComponent<NavMeshAgent>();
         }
 
         // Custom properties
-        nm_agent.autoBraking = false;
-        nm_agent.autoRepath = true;
+        nav_mesh_agent.autoBraking = false;
+        nav_mesh_agent.autoRepath = true;
 
-        // Save our previous position
-        prev_position = transform.position;
-        distance_to_destination = 1000f;
+        // Get the destination from Generator singleton if it exists.
+        if (Generator.current != null) {
+            nav_mesh_agent.speed = Generator.current.max_speed;
+            nav_mesh_agent.acceleration = Generator.current.acceleration;
+            nav_mesh_agent.stoppingDistance = Generator.current.destination_buffer;
+            nav_mesh_agent.radius = Generator.current.spatial_radius;
+            SetDestination(Generator.current.destinations[this.agent_index]);
+        }
     }
 
     /*
@@ -45,8 +45,6 @@ public class Agent_NM : MonoBehaviour
     */
 
     public virtual void SetDestination(Vector3 d) {
-        destination = d;
-        nm_agent.SetDestination(d);
-        distance_to_destination = nm_agent.remainingDistance;
+        nav_mesh_agent.SetDestination(d);    
     }
 }
