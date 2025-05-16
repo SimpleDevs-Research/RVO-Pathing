@@ -87,6 +87,7 @@ namespace RVO {
         public NativeArray<float3> new_velocities;
         public NativeArray<float2> penalties;
         public NativeArray<bool> reached_destination;
+        public NativeArray<bool> active;
         public TransformAccessArray transforms;
         // Job handles
         JobHandle rvoJobHandle = default;
@@ -169,10 +170,11 @@ namespace RVO {
             new_velocities = new NativeArray<float3>(num_agents, Allocator.Persistent);
             penalties = new NativeArray<float2>(num_agents, Allocator.Persistent);
             reached_destination = new NativeArray<bool>(num_agents, Allocator.Persistent);
+            active = new NativeArray<bool>(num_agents, Allocator.Persistent);
             agent_positions = new Vector3[num_agents];
             agent_penalties = new float2[num_agents];
             agent_new_velocities = new float3[num_agents];
-            
+
             // Step 1b. Initialize temp transforms array, which we'll use to create our TransformAccessArray later
             Transform[] _transforms = new Transform[num_agents];
 
@@ -237,6 +239,7 @@ namespace RVO {
             new_velocities[agent_index] = Vector3.zero;
             penalties[agent_index] = new float2(0f,0f);
             reached_destination[agent_index] = false;
+            active[agent_index] = true;
 
             // Step 3: Use demographics to generate the next pedestrian parameters
             Personality p = demographics.GetRandomPersonality();
@@ -256,7 +259,10 @@ namespace RVO {
 
             // Step 5: if has Agent_Debug, then let it know its agent index
             Robot ad = go.GetComponent<Robot>();
-            if (ad != null) ad.agent_index = agent_index;
+            if (ad != null) {
+                ad.agent_index = agent_index;
+                ad.personality = p;
+            }
         }
 
 
@@ -276,6 +282,12 @@ namespace RVO {
         protected virtual void Observation () {
             // Iterate through all agents
             for(int i = 0; i < num_agents; i++) {
+                // Skip ourselves if inactive
+                active[i] = transforms[i].gameObject.activeSelf;
+                if (!active[i]) {
+                    num_neighbors[i] = 0;
+                    continue;
+                }
                 // KDTree Sort
                 List<KDQuery.DistanceResult<int>> results = new List<KDQuery.DistanceResult<int>>();
                 QueryRadiusSort(positions[i], visual_radius, ref results);
@@ -285,6 +297,7 @@ namespace RVO {
                 for(int j = 0; j < results.Count; j++) {
                     int neighbor_index = results[j].data;                   // What's the neighbor index?
                     if (neighbor_index == i) continue;                      // Skip if ourselves
+                    if (!active[neighbor_index]) continue;                  // SKip if inactive neighbor
                     // Check if colliding
                     if (results[j].distance < Mathf.Pow(radii[i] + radii[neighbor_index], 2)) {
                         if (!colliding) {
@@ -313,6 +326,12 @@ namespace RVO {
             return results.Count > 0;
         }
 
+        // Helper: if we want to toggle specific agents or not, do so here
+        public virtual void ToggleRobot(int agent_index, bool to_toggle) {
+            transforms[agent_index].gameObject.SetActive(to_toggle);
+            active[agent_index] = to_toggle;
+        }
+
 
         // The PROCESSING step: Using RVO mechanisms, determine the optimal velocity to move in.
         //                      Note that we require a deltaTime parameter, in case someone is using this in another update cycle
@@ -324,6 +343,7 @@ namespace RVO {
                 neighbor_indices = neighbor_indices,
                 num_neighbors = num_neighbors,
                 is_colliding = is_colliding,
+                active = active,
                 responsibility_factors = responsibility_factors,
                 safety_factors = safety_factors,
                 inertia_factors = inertia_factors,
@@ -350,6 +370,7 @@ namespace RVO {
                 destinations = destinations,
                 deltaTime = deltaTime,
                 accelerations = accelerations,
+                active = active,
                 destination_buffer = destination_buffer,
                 positions = positions,
                 velocities = velocities,
@@ -451,7 +472,8 @@ namespace RVO {
             [ReadOnly] public NativeArray<int> neighbor_indices;    // List of, upwards to 8, neighbors of all agents
             [ReadOnly] public NativeArray<int> num_neighbors;       // List of the number of neighbors of all agents
             [ReadOnly] public NativeArray<bool> is_colliding;       // List of checks for collisions of all agents
-            
+            [ReadOnly] public NativeArray<bool> active;
+
             // Agent parameters
             [ReadOnly] public NativeArray<float> responsibility_factors;
             [ReadOnly] public NativeArray<float> safety_factors;
@@ -533,6 +555,12 @@ namespace RVO {
             }
 
             public void Execute(int index) {
+                // Skip entirely if we're inactive
+                if (!active[index]) {
+                    new_velocities[index] = new float3(0f,0f,0f);
+                    penalties[index] = 0f;
+                    return;
+                }
                 // For agent i, we must determine the preferred velocity
                 float3 pA = positions[index];
                 float3 vA = velocities[index];
@@ -586,6 +614,7 @@ namespace RVO {
             [ReadOnly] public NativeArray<float3> new_velocities;
             [ReadOnly] public NativeArray<float> accelerations;
             [ReadOnly] public NativeArray<float3> destinations;
+            [ReadOnly] public NativeArray<bool> active;
 
             // Delta time must be copied to the job since jobs generally don't have concept of a frame.
             // The main thread waits for the job same frame or next frame, but the job should do work deterministically
@@ -599,6 +628,12 @@ namespace RVO {
 
             // The code actually running on the job
             public void Execute(int index, TransformAccess transform) {
+                // Skip early if inactive
+                if (!active[index]) {
+                    // Don't update position or reached destination
+                    velocities[index] = new_velocities[index];
+                    return;
+                }
                 // Initialize float3's for new position and velocity
                 float3 new_position, new_velocity;
                 float acceleration = accelerations[index];
@@ -608,6 +643,7 @@ namespace RVO {
                 float dist_to_destination = math.length(diff);
                 bool at_destination = dist_to_destination < destination_buffer;
 
+                /*
                 // If we reached our destination, just set the new position to our destination and set new velocity to 0.
                 // Otherwise, Determine the new velocity we should move the agent in.
                 if (at_destination) {
@@ -621,6 +657,9 @@ namespace RVO {
                     else new_velocity = (1f - (acceleration * deltaTime / dv)) * vA + (acceleration * deltaTime / dv) * new_vA;
                     new_position = positions[index] + new_velocity * deltaTime;
                 }
+                */
+                new_velocity = new_velocities[index];
+                new_position = positions[index] + new_velocity * deltaTime;         
 
                 // We need to update our native arrays
                 positions[index] = new_position;
@@ -659,6 +698,7 @@ namespace RVO {
             if (new_velocities.IsCreated) new_velocities.Dispose();
             if (penalties.IsCreated) penalties.Dispose();
             if (reached_destination.IsCreated) reached_destination.Dispose();
+            if (active.IsCreated) active.Dispose();
             if (transforms.isCreated) transforms.Dispose();
         }
 

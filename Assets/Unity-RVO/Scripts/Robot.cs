@@ -8,8 +8,9 @@ using UnityEditor;
 namespace RVO {
     public class Robot : MonoBehaviour
     {
-
+        [Header("=== Robot Settings ===")]
         public int agent_index;
+        public Personality personality;
         Color neighbor_color = Color.blue;
         Color new_velocity_color = Color.red;
 

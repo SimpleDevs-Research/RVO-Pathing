@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Runner
   responsibility_factor: 0.1
-  safety_factor: 0.5
+  safety_factor: 1
   inertia_factor: 0
   spatial_radius: 0.5
-  max_speed: 2.5
+  max_speed: 2
   acceleration: 5
   risk_aversion: 0
   dirtiness_aversion: 0
