@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
+using GD.MinMaxSlider;
+using Random = UnityEngine.Random;
 
 namespace RVO {
     [System.Serializable]
@@ -52,5 +54,44 @@ namespace RVO {
         public Vector3 end;
         public Color color;
         public List<Vector3> points;
+    }
+
+    [System.Serializable]
+    public class SpawnRate<T> {
+        public T value;
+        [MinMaxSlider(0,100)] public Vector2Int spawn_chance;
+    }
+
+    [System.Serializable]
+    public class Demographics {
+        public SpawnRate<Demographic>[] demographics;
+
+        public Personality GetRandomPersonality() {
+            return GetPersonality(GetDemographic());
+        }
+        public Demographic GetDemographic() {
+            int r = (int)(Random.value * 100f);
+            Demographic v = demographics[0].value;
+            for(int i = 0; i < demographics.Length; i++) {
+                Vector2Int chance = demographics[i].spawn_chance;
+                if (chance.x <= r && r < chance.y) {
+                    v = demographics[i].value;
+                    break;
+                }
+            }
+            return v;
+        }
+        public Personality GetPersonality(Demographic demo) {
+            int r = (int)(Random.value * 100f);
+            Personality p = demo.personalities[0].value;
+            for(int i = 0; i < demo.personalities.Length; i++) {
+                Vector2Int chance = demo.personalities[i].spawn_chance;
+                if (chance.x <= r && r < chance.y) {
+                    p = demo.personalities[i].value;
+                    break;
+                }
+            }
+            return p;
+        }
     }
 }

@@ -22,10 +22,10 @@ public class NMRobot : Robot
 
         // Get the destination from Generator singleton if it exists.
         if (Generator.current != null) {
-            nav_mesh_agent.speed = Generator.current.max_speed;
-            nav_mesh_agent.acceleration = Generator.current.acceleration;
+            nav_mesh_agent.speed = Generator.current.max_speeds[this.agent_index];
+            nav_mesh_agent.acceleration = Generator.current.accelerations[this.agent_index];
             nav_mesh_agent.stoppingDistance = Generator.current.destination_buffer;
-            nav_mesh_agent.radius = Generator.current.spatial_radius;
+            nav_mesh_agent.radius = Generator.current.radii[this.agent_index];
             SetDestination(Generator.current.destinations[this.agent_index]);
         }
     }

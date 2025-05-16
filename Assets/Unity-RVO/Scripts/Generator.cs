@@ -38,17 +38,19 @@ namespace RVO {
         [Tooltip("Spawn Orientation Setting")]                  public SpawnStyle spawn_orientation = SpawnStyle.Random;
         [Tooltip("Distance between start and end pos. ONLY with a non-random spawn orientation")]   public float bound_edge_buffer = 10f;
         
-        [Header("=== RVO Settings ===")]
-        [Tooltip("Maximum speed of agents")]                    public float max_speed = 2f;
-        [Tooltip("Acceleration of agents")]                     public float acceleration = 5f;
+        [Header("=== RVO Global Settings ===")]
+        [Tooltip("All demographic groups used when generating agents. Note that the demographic groups' chances must total to 100")]
+        public Demographics demographics;
+        [Space]
         [Tooltip("How many candidate directions to consider?")] public int num_candidate_directions = 16;
         [Tooltip("How many neighbors to consider?")]            public int max_neighbors = 8;
         [Tooltip("Radius of 'vision' - for neighbor search")]   public float visual_radius = 5f;
-        [Tooltip("Radius of agent space")]                      public float spatial_radius = 0.25f;
         [Space]
+        /*
         [Tooltip("Shared responsibility factor"),Range(0f,1f)]  public float responsibility_factor = 0.5f;
         [Tooltip("Safety factor; TTC weight")]                  public float safety_factor = 1f;
         [Tooltip("Inertia factor; sidedness weight")]           public float inertia_factor = 0f;
+        */
 
         [Header("=== Non-RVO ===")]
         /*
@@ -75,6 +77,13 @@ namespace RVO {
         public NativeArray<int> neighbor_indices;
         public NativeArray<int> num_neighbors;
         public NativeArray<bool> is_colliding;
+        public NativeArray<float> responsibility_factors;
+        public NativeArray<float> safety_factors;
+        public NativeArray<float> inertia_factors;
+        public NativeArray<float> radii;
+        public NativeArray<float> max_speeds;
+        public NativeArray<float> accelerations;
+
         public NativeArray<float3> new_velocities;
         public NativeArray<float2> penalties;
         public NativeArray<bool> reached_destination;
@@ -149,8 +158,14 @@ namespace RVO {
             destinations = new NativeArray<float3>(num_agents, Allocator.Persistent);
             neighbor_indices = new NativeArray<int>(num_agents*max_neighbors, Allocator.Persistent);
             num_neighbors = new NativeArray<int>(num_agents, Allocator.Persistent);
-            //is_colliding = new NativeArray<bool>(num_agents*max_neighbors, Allocator.Persistent);
             is_colliding = new NativeArray<bool>(num_agents, Allocator.Persistent);
+            responsibility_factors = new NativeArray<float>(num_agents, Allocator.Persistent);
+            safety_factors = new NativeArray<float>(num_agents, Allocator.Persistent);
+            inertia_factors = new NativeArray<float>(num_agents, Allocator.Persistent);
+            radii = new NativeArray<float>(num_agents, Allocator.Persistent);
+            max_speeds = new NativeArray<float>(num_agents, Allocator.Persistent);
+            accelerations = new NativeArray<float>(num_agents, Allocator.Persistent);
+
             new_velocities = new NativeArray<float3>(num_agents, Allocator.Persistent);
             penalties = new NativeArray<float2>(num_agents, Allocator.Persistent);
             reached_destination = new NativeArray<bool>(num_agents, Allocator.Persistent);
@@ -223,14 +238,23 @@ namespace RVO {
             penalties[agent_index] = new float2(0f,0f);
             reached_destination[agent_index] = false;
 
-            // Step 3: Generate agents to represent these in physical world space
+            // Step 3: Use demographics to generate the next pedestrian parameters
+            Personality p = demographics.GetRandomPersonality();
+            responsibility_factors[agent_index] = p.responsibility_factor;
+            safety_factors[agent_index] = p.safety_factor;
+            inertia_factors[agent_index] = p.inertia_factor;
+            radii[agent_index] = p.spatial_radius;
+            max_speeds[agent_index] = p.max_speed;
+            accelerations[agent_index] = p.acceleration;
+
+            // Step 4: Generate agents to represent these in physical world space
             GameObject go = Instantiate(agent_prefab, pos, Quaternion.LookRotation(forward));
             Transform t = go.transform;
             t.parent = agent_parent;
             agent_positions[agent_index] = pos;
             _transforms[agent_index] = t;
 
-            // Step 4: if has Agent_Debug, then let it know its agent index
+            // Step 5: if has Agent_Debug, then let it know its agent index
             Robot ad = go.GetComponent<Robot>();
             if (ad != null) ad.agent_index = agent_index;
         }
@@ -262,7 +286,7 @@ namespace RVO {
                     int neighbor_index = results[j].data;                   // What's the neighbor index?
                     if (neighbor_index == i) continue;                      // Skip if ourselves
                     // Check if colliding
-                    if (results[j].distance < Mathf.Pow(spatial_radius*2f,2)) {
+                    if (results[j].distance < Mathf.Pow(radii[i] + radii[neighbor_index], 2)) {
                         if (!colliding) {
                             colliding = true;
                             n_neighbors = 0;        
@@ -300,15 +324,15 @@ namespace RVO {
                 neighbor_indices = neighbor_indices,
                 num_neighbors = num_neighbors,
                 is_colliding = is_colliding,
+                responsibility_factors = responsibility_factors,
+                safety_factors = safety_factors,
+                inertia_factors = inertia_factors,
+                radii = radii,
+                max_speeds = max_speeds,
                 // For now, assume equal radius size among all agents
                 deltaTime = deltaTime,
-                radius = spatial_radius,
-                max_speed = max_speed,
                 num_directions = num_candidate_directions,
                 max_neighbors = max_neighbors,
-                responsibility_factor = responsibility_factor,
-                safety_factor = safety_factor,
-                inertia_factor = inertia_factor,
                 // The output
                 new_velocities = new_velocities,
                 penalties = penalties
@@ -325,7 +349,7 @@ namespace RVO {
                 new_velocities = new_velocities,
                 destinations = destinations,
                 deltaTime = deltaTime,
-                acceleration = acceleration,
+                accelerations = accelerations,
                 destination_buffer = destination_buffer,
                 positions = positions,
                 velocities = velocities,
@@ -420,21 +444,25 @@ namespace RVO {
         // RVO Job
         [BurstCompile(CompileSynchronously = true)]
         struct RVOJobParallelFor : IJobParallelFor {
+            // Current Agent States
             [ReadOnly] public NativeArray<float3> positions;       // List of all positions of all agents
             [ReadOnly] public NativeArray<float3> velocities;      // List of all velocities of all agents
             [ReadOnly] public NativeArray<float3> destinations;    // List of all destinations of all agents
             [ReadOnly] public NativeArray<int> neighbor_indices;    // List of, upwards to 8, neighbors of all agents
             [ReadOnly] public NativeArray<int> num_neighbors;       // List of the number of neighbors of all agents
             [ReadOnly] public NativeArray<bool> is_colliding;       // List of checks for collisions of all agents
+            
+            // Agent parameters
+            [ReadOnly] public NativeArray<float> responsibility_factors;
+            [ReadOnly] public NativeArray<float> safety_factors;
+            [ReadOnly] public NativeArray<float> inertia_factors;
+            [ReadOnly] public NativeArray<float> radii;             // The expected radius of all agents.
+            [ReadOnly] public NativeArray<float> max_speeds;        // The maximum speeds of all agents.
 
+            // Global parameters
             [ReadOnly] public float deltaTime;                      // Time step
-            [ReadOnly] public float max_speed;                      // Maximum speed of an agent
-            [ReadOnly] public float radius;                         // The expected radius of all agents. Generalize across all agents
             [ReadOnly] public int num_directions;                   // The number of directions we can iterate over
             [ReadOnly] public int max_neighbors;                    // The maximum number of neighbors possible
-            [ReadOnly] public float responsibility_factor;          // Weight to control responsibility of an agent
-            [ReadOnly] public float safety_factor;                  // Weight to control TTC affect on penalty
-            [ReadOnly] public float inertia_factor;                 // Weight to control sidedness preference
             
             // The output
             [WriteOnly] public NativeArray<float3> new_velocities;  // The final velocity of an agent
@@ -477,28 +505,29 @@ namespace RVO {
                 // Initialize the distance cost, time cost, and inertia costs
                 float distance_cost = math.length(candidate_velocity - preferred_velocity);
                 float time_cost = 100000f;
-                float inertia_cost = math.length(candidate_velocity - vA) * inertia_factor;
+                float inertia_cost = math.length(candidate_velocity - vA) * inertia_factors[index];
                 float ct;
                 // Given the candidate velocity, iterate through our neighbors
                 for(int j = 0; j < n_neighbors; j++) {
                     // Get the position and velocity of the other agent
-                    int neighbor_indices_index = index * max_neighbors + j;
-                    float3 pB = positions[neighbor_indices[neighbor_indices_index]];
-                    float3 vB = velocities[neighbor_indices[neighbor_indices_index]];
+                    int neighbor_index = neighbor_indices[index * max_neighbors + j];
+                    float3 pB = positions[neighbor_index];
+                    float3 vB = velocities[neighbor_index];
+                    float rB = radii[neighbor_index];
                     //bool colliding = is_colliding[neighbor_indices[neighbor_indices_index]];
                     // calculate time to collision for this agent
-                    float3 translate_vb_va = (1f/responsibility_factor)*candidate_velocity + (1f-(1f/responsibility_factor))*vA - vB;
+                    float3 translate_vb_va = (1f/responsibility_factors[index])*candidate_velocity + (1f-(1f/responsibility_factors[index]))*vA - vB;
                     //float mink_sum = radii[index] + radii[neighbor_index];
-                    float mink_sum = 2f * radius;
+                    float mink_sum = radii[index] + rB;
                     float time = TimeToCollision(pA, translate_vb_va, pB, mink_sum, colliding);
                     ct = time;
-                    if (colliding) ct = -(time / deltaTime) - (absSq(candidate_velocity)/sq(max_speed));
+                    if (colliding) ct = -(time / deltaTime) - (absSq(candidate_velocity)/sq(max_speeds[index]));
                     // If the current time to collision is less than the time cost, then we set it
                     if (ct < time_cost) time_cost = ct;
                 }
                 // Return the final penalty
                 return new float2(
-                    safety_factor / time_cost + distance_cost + inertia_cost,
+                    safety_factors[index] / time_cost + distance_cost + inertia_cost,
                     time_cost
                 );
             }
@@ -509,7 +538,7 @@ namespace RVO {
                 float3 vA = velocities[index];
                 int n_neighbors = num_neighbors[index];
                 bool colliding = is_colliding[index];
-                float3 preferred_velocity = math.normalize(destinations[index] - pA) * max_speed;
+                float3 preferred_velocity = math.normalize(destinations[index] - pA) * max_speeds[index];
 
                 // If our n_neighbors is 0... then there's no need to perform the operation.
                 if (n_neighbors == 0) {
@@ -530,7 +559,7 @@ namespace RVO {
                     float x = math.sin(theta);
                     float y = math.cos(theta);
                     // increment downwards to at least consider max speed
-                    for (float r = max_speed; r > 0f; r -= 0.1f) {
+                    for (float r = max_speeds[index]; r > 0f; r -= 0.1f) {
                         // Determine the candidate velocity
                         float3 candidate_velocity = new float3(r*x, 0f, r*y);
                         float2 est_penalty = CalculatePenalty(index, candidate_velocity, preferred_velocity, pA, vA, n_neighbors, colliding);
@@ -555,13 +584,13 @@ namespace RVO {
             // By declaring it as read only, multiple jobs are allowed to access the data in parallel
             
             [ReadOnly] public NativeArray<float3> new_velocities;
+            [ReadOnly] public NativeArray<float> accelerations;
             [ReadOnly] public NativeArray<float3> destinations;
 
             // Delta time must be copied to the job since jobs generally don't have concept of a frame.
             // The main thread waits for the job same frame or next frame, but the job should do work deterministically
             // independent on when the job happens to run on the worker threads.
             [ReadOnly] public float deltaTime;
-            [ReadOnly] public float acceleration;
             [ReadOnly] public float destination_buffer;
 
             public NativeArray<float3> positions;   // read and write
@@ -572,6 +601,7 @@ namespace RVO {
             public void Execute(int index, TransformAccess transform) {
                 // Initialize float3's for new position and velocity
                 float3 new_position, new_velocity;
+                float acceleration = accelerations[index];
 
                 // Check early if we reached our destination
                 float3 diff = destinations[index] - positions[index];
@@ -589,7 +619,7 @@ namespace RVO {
                     float dv = math.length(new_vA - vA);
                     if (dv < acceleration * deltaTime) new_velocity = new_vA;
                     else new_velocity = (1f - (acceleration * deltaTime / dv)) * vA + (acceleration * deltaTime / dv) * new_vA;
-                    new_position = positions[index] + vA * deltaTime;
+                    new_position = positions[index] + new_velocity * deltaTime;
                 }
 
                 // We need to update our native arrays
@@ -619,6 +649,13 @@ namespace RVO {
             if (neighbor_indices.IsCreated) neighbor_indices.Dispose();
             if (num_neighbors.IsCreated) num_neighbors.Dispose();
             if (is_colliding.IsCreated) is_colliding.Dispose();
+            if (responsibility_factors.IsCreated) responsibility_factors.Dispose();
+            if (safety_factors.IsCreated) safety_factors.Dispose();
+            if (inertia_factors.IsCreated) inertia_factors.Dispose();
+            if (radii.IsCreated) radii.Dispose();
+            if (max_speeds.IsCreated) max_speeds.Dispose();
+            if (accelerations.IsCreated) accelerations.Dispose();
+
             if (new_velocities.IsCreated) new_velocities.Dispose();
             if (penalties.IsCreated) penalties.Dispose();
             if (reached_destination.IsCreated) reached_destination.Dispose();

@@ -171,20 +171,20 @@ MonoBehaviour:
   agent_prefab: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   scene_cam: {fileID: 963194227}
   floor: {fileID: 1257806266}
-  bounds: {x: 100, y: 100}
+  bounds: {x: 20, y: 100}
   num_agents: 250
   destination_buffer: 0.1
   spawn_orientation: 1
   bound_edge_buffer: 1
-  max_speed: 2
-  acceleration: 5
+  demographics:
+    demographics:
+    - value: {fileID: 11400000, guid: bb6b95f6d25444c8897ea537c0f85ee9, type: 2}
+      spawn_chance: {x: 0, y: 100}
+    - value: {fileID: 11400000, guid: 5ef587ea6ea054eeda7e04bc0527a207, type: 2}
+      spawn_chance: {x: 0, y: 0}
   num_candidate_directions: 16
   max_neighbors: 8
   visual_radius: 5
-  spatial_radius: 0.25
-  responsibility_factor: 0.5
-  safety_factor: 1
-  inertia_factor: 0
   fps_smoothing_factor: 0.25
   current_fps: 0
   smoothed_fps: 0
