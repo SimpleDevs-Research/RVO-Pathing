@@ -192,13 +192,13 @@ MonoBehaviour:
   destination_buffer: 0.05
   spawn_orientation: 0
   bound_edge_buffer: 10
+  rvo_method: 1
   demographics:
     demographics:
     - value: {fileID: 11400000, guid: bb6b95f6d25444c8897ea537c0f85ee9, type: 2}
       spawn_chance: {x: 0, y: 50}
     - value: {fileID: 11400000, guid: 5ef587ea6ea054eeda7e04bc0527a207, type: 2}
       spawn_chance: {x: 50, y: 100}
-  acceleration: 5
   num_candidate_directions: 16
   max_neighbors: 8
   visual_radius: 5

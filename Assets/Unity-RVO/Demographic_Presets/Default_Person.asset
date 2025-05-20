@@ -15,7 +15,7 @@ MonoBehaviour:
   id: Base
   responsibility_factor: 0.5
   safety_factor: 1
-  inertia_factor: 0.01
+  inertia_factor: 0
   spatial_radius: 0.25
   max_speed: 1
   acceleration: 3
