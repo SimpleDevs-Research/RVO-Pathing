@@ -20,7 +20,7 @@ namespace Routing {
         }
 
         protected virtual void Update() {
-            if (Generator.current.reached_destination[agent_index]) {
+            if (Generator.current.vo_op.reached_destination[agent_index]) {
                 // We're within the acceptable radius of our current_destination_node
                 // If the current_destination_node is the same as our goal node already...
                 //      ... then that means we should despawn
@@ -48,7 +48,7 @@ namespace Routing {
                     personality
                 );
             }
-            Generator.current.destinations[agent_index] = current_destination_node.GetRandomPoint();
+            Generator.current.vo_op.destinations[agent_index] = current_destination_node.GetRandomPoint();
         } 
     }
 }

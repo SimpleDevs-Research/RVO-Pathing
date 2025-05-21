@@ -20,18 +20,18 @@ namespace RVO {
             if (Generator.current == null) return;
             // show neighbors
             Gizmos.color = neighbor_color;
-            Vector3 pA = Generator.current.positions[agent_index];
-            for(int i = 0; i < Generator.current.num_neighbors[agent_index]; i++) {
-                int neighbor_index = Generator.current.neighbor_indices[agent_index*Generator.current.max_neighbors+i];
-                Vector3 pB = Generator.current.positions[neighbor_index];
+            Vector3 pA = Generator.current.vo_op.positions[agent_index];
+            for(int i = 0; i < Generator.current.vo_op.num_neighbors[agent_index]; i++) {
+                int neighbor_index = Generator.current.vo_op.neighbor_indices[agent_index*Generator.current.max_neighbors+i];
+                Vector3 pB = Generator.current.vo_op.positions[neighbor_index];
                 Gizmos.DrawLine(pA,pB);
                 Gizmos.DrawWireSphere(pB,0.5f);
             }
             // Show new velocity
             Gizmos.color = new_velocity_color;
-            Gizmos.DrawRay(pA,Generator.current.new_velocities[agent_index]);
-            GUI.color = new_velocity_color;
-            Handles.Label(pA+new Vector3(1f,0f,1f), Generator.current.penalties[agent_index].ToString());
+            Gizmos.DrawRay(pA,Generator.current.vo_op.new_velocities[agent_index]);
+            //GUI.color = new_velocity_color;
+            //Handles.Label(pA+new Vector3(1f,0f,1f), Generator.current.penalties[agent_index].ToString());
 
         }
         #endif

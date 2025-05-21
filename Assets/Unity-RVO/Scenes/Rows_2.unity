@@ -191,7 +191,6 @@ MonoBehaviour:
   smoothed_fps: 0
   draw_bounds: 1
   bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  agent_penalties: []
   agent_new_velocities: []
 --- !u!1 &700461721
 GameObject:

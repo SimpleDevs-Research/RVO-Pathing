@@ -30,7 +30,7 @@ namespace Routing {
 
         // This function overwrites the original `GenerateAgent` function by...
         // ... update it with a current destination node and a goal node system
-        protected override void GenerateAgent(int agent_index, ref Transform[] _transforms) {
+        protected override void GenerateAgent(int agent_index) {
             // Step 1a: Generate the start and end positions of our agent's trajectory via randomization
             // UPDATED PART: we look at start and end nodes instead of start and end positions intiially (we do that later).
             Node start_node, end_node;
@@ -73,48 +73,24 @@ namespace Routing {
             // Step 1c. Calculate additional properties based on the start and end positions.
             Vector3 diff = dest - pos;
             Vector3 forward = (diff.sqrMagnitude == 0f) ? Vector3.right : diff.normalized;
-
-            // Step 2: Populate our native arrays with these details. 
-            //      Note that we default velocity as a zero vector. 
-            //      We also assume all agents have the same spatial radius
-            positions[agent_index] = pos;
-            velocities[agent_index] = Vector3.zero;
-            destinations[agent_index] = dest;
-            // We use a nested for loop because neighbor_indices occupy a set range of spaces in the `neighbor_indices` nativearray buffer.
-            for(int j = 0; j < max_neighbors; j++) {
-                neighbor_indices[agent_index*max_neighbors+j] = agent_index;
-                //is_colliding[agent_index*max_neighbors+j] = false;
-            }
-            is_colliding[agent_index] = false;
-            num_neighbors[agent_index] = 0;
-            new_velocities[agent_index] = Vector3.zero;
-            penalties[agent_index] = new float2(0f);
-            reached_destination[agent_index] = false;
-            active[agent_index] = true;
-
-            // Step 3: Use demographics to generate the next pedestrian parameters
             Personality p = demographics.GetRandomPersonality();
-            responsibility_factors[agent_index] = p.responsibility_factor;
-            safety_factors[agent_index] = p.safety_factor;
-            inertia_factors[agent_index] = p.inertia_factor;
-            radii[agent_index] = p.spatial_radius;
-            max_speeds[agent_index] = p.max_speed;
-            accelerations[agent_index] = p.acceleration;
 
-            // Step 4: Generate agents to represent these in physical world space
-            // UPDATED PART: given the current positions (positions[agent_index]) and destination (destinations[agent_index])...
-            //  ... Let's determine the closest node to our current position as the current destination_node...
-            //  ... and the goal node as the closest to our current destination
+            // Step 2: Instantiate the agent itself
             GameObject go = Instantiate(agent_prefab, pos, Quaternion.LookRotation(forward));
             Transform t = go.transform;
-            Pedestrian ped = t.GetComponent<Pedestrian>();
             t.parent = agent_parent;
-            agent_positions[agent_index] = pos;
-            _transforms[agent_index] = t;
+            Pedestrian ped = t.GetComponent<Pedestrian>();
             pedestrians.Add(ped);
+            ped.agent_index = agent_index;
             ped.personality = p;
             ped.current_destination_node = start_node;
             ped.goal_node = end_node;
+
+            // Step 3: Inform our agent data in vo_op
+            vo_op.AddAgent(agent_index, pos, dest, t, p);
+
+            // Step 4: Miscellaneous. For Robot components and KDTree stuff.
+            agent_positions[agent_index] = pos;
         }
     }
 }
