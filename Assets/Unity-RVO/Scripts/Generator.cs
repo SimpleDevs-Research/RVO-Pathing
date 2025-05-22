@@ -389,12 +389,12 @@ namespace RVO {
 
             public NativeArray<float3> positions;   // read and write
             public NativeArray<float3> velocities; // read and write
-            [WriteOnly] public NativeArray<bool> reached_destination;
+            public NativeArray<bool> reached_destination;
 
             // The code actually running on the job
             public void Execute(int index, TransformAccess transform) {
                 // Skip early if inactive
-                if (!active[index]) {
+                if (!active[index] || reached_destination[index]) {
                     // Don't update position or reached destination
                     velocities[index] = new_velocities[index];
                     return;

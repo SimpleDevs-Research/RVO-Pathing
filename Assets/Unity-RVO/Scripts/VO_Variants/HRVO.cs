@@ -22,16 +22,35 @@ using Unity.Burst;
 namespace RVO {
     public class HRVO_OP : VO_OP
     {
-        JobHandle neighbor_handle = default;
+        JobHandle apex_handle = default;
         JobHandle jobHandle = default;
 
-        public override void Execute( float deltaTime, int num_threads=64 ) {
-            // First step: iterate through all neighbors. We need to determine the apex positions of each neighbor
+        [System.Serializable]
+        public struct NeighborApex {
+            public int neighbor_index;
+            public float3 apex;
+            public float3 side1;
+            public float3 side2;
+        }
 
+        // We set up a NativeArray just for HRVO - one that stores neighbor apexes
+        public NativeArray<NeighborApex> apexes;
+
+        // We override `Initialize()` to account for the new `apexes` nativearray
+        public override void Initialize(Generator generator)
+        {
+            // Still call base initializer
+            base.Initialize(generator);
+            // Now initialize apexes
+            apexes = new NativeArray<NeighborApex>(generator.num_agents, Allocator.Persistent);
+        }
+
+        public override void Execute(float deltaTime, int num_threads = 64) {
             var job = new HRVOJobParallelFor() {
                 positions = this.positions,
                 velocities = this.velocities,
                 destinations = this.destinations,
+                reached_destination = this.reached_destination,
                 neighbor_indices = this.neighbor_indices,
                 num_neighbors = this.num_neighbors,
                 colliding = this.colliding,
@@ -52,8 +71,16 @@ namespace RVO {
             jobHandle.Complete();
         }
 
+        // We override the `Terminate()` function to dispose the new `apexes` nativearray
+        public override void Terminate() {
+            // Still have to call the base Terminate()
+            base.Terminate();
+            // Now dispose apexes
+            if (apexes.IsCreated) apexes.Dispose();
+        }
+
         [BurstCompile(CompileSynchronously = true)]
-        struct NeighborJob : IJobParallelFor {
+        struct ApexJobParallelFor : IJobParallelFor {
             // Read-Only Buffers
             [ReadOnly] public NativeArray<bool> active;             // List of active agents
             [ReadOnly] public NativeArray<float3> positions;        // List of all positions of all agents
@@ -69,10 +96,12 @@ namespace RVO {
             [ReadOnly] public int max_neighbors;                    // The maximum number of neighbors possible
 
             // Output buffers
+            [WriteOnly] public NativeArray<NeighborApex> apexes;
 
             // Helper: calcualte determinatne of two float2's
-            public float det(float3 a, float3 b) { 
-                return a.x*b.z - a.z*b.x; 
+            public float det(float3 a, float3 b)
+            {
+                return a.x * b.z - a.z * b.x;
             }
             // Helper: calculate the normal vector
             public float3 normal(float3 v1, float3 v2) {
@@ -81,9 +110,7 @@ namespace RVO {
 
             public void Execute(int agent_index) {
                 // Skip if we're inactive
-                if (!active[agent_index]) {
-                    return;
-                }
+                if (!active[agent_index]) return;
 
                 float3 pA = positions[agent_index];
                 float3 vA = velocities[agent_index];
@@ -91,7 +118,8 @@ namespace RVO {
                 float3 vprefA = math.normalize(destinations[agent_index] - pA) * max_speeds[agent_index];
 
                 // Iterate through all known neighbors
-                for(int i = 0; i < num_neighbors[agent_index]; i++) {
+                for (int i = 0; i < num_neighbors[agent_index]; i++)
+                {
                     // basics of our neighbor
                     int ni = neighbor_indices[agent_index * max_neighbors + i];
                     float3 pB = positions[ni];
@@ -106,7 +134,8 @@ namespace RVO {
                     // Initialize the things we want to ultimately measure
                     float3 apex, side1, side2;
                     // Check: are we colliding with them?
-                    if (!colliding) {
+                    if (!colliding)
+                    {
                         // They're at least some distance between us and them.
                         float angle = math.atan2(rel_pos.z, rel_pos.x);
                         float opening_angle = math.asin(comb_radius / math.length(rel_pos));
@@ -121,20 +150,26 @@ namespace RVO {
                             math.sin(angle + opening_angle)
                         );
                         float d = 2f * math.sin(opening_angle) * math.cos(opening_angle);
-                        if (det(rel_pos, vprefA - vprefB) > 0f) {
+                        if (det(rel_pos, vprefA - vprefB) > 0f)
+                        {
                             float s = 0.5f * det(rel_vel, side2) / d;
                             apex = vB + s * side1;
-                        } else {
+                        }
+                        else
+                        {
                             float s = 0.5f * det(rel_vel, side1) / d;
                             apex = vB + s * side2;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         // Pull out immediately!
                         apex = 0.5f * (vB + vA) - (0.5f * (comb_radius - math.length(rel_pos)) / deltaTime) * math.normalize(rel_pos);
                         side1 = normal(pA, pB);
                         side2 = -side1;
                     }
                     // After calculating apex, side1, and side2, cache these results
+                    apexes[i] = new NeighborApex() { neighbor_index = ni, apex = apex, side1 = side1, side2 = side2 };
                 }
             }
         }
@@ -145,6 +180,7 @@ namespace RVO {
             [ReadOnly] public NativeArray<float3> positions;       // List of all positions of all agents
             [ReadOnly] public NativeArray<float3> velocities;      // List of all velocities of all agents
             [ReadOnly] public NativeArray<float3> destinations;    // List of all destinations of all agents
+            [ReadOnly] public NativeArray<bool> reached_destination;  // List of all agents who reached their destinations
             [ReadOnly] public NativeArray<int> neighbor_indices;    // List of, upwards to 8, neighbors of all agents
             [ReadOnly] public NativeArray<int> num_neighbors;       // List of the number of neighbors of all agents
             [ReadOnly] public NativeArray<bool> colliding;       // List of checks for collisions of all agents
@@ -216,41 +252,73 @@ namespace RVO {
                 float angle = math.asin(rr / dist);
                 float3 tangent1 = rotateVector(dir, angle);
                 float3 tangent2 = rotateVector(dir, -angle);
-                float3 leg1 = math.dot(v_rel, tangent1) < 0 ? tangent1 : tangent2;
+                float3 leg1 = math.dot(v_rel, tangent1) < math.dot(v_rel, tangent2) ? tangent1 : tangent2;
 
                 // Project v_rel onto leg1
                 float3 projection = math.dot(v_rel, leg1) * leg1;
                 float3 u = projection - v_rel;
                 return u;
             }
+            
+            public float3 ProjectOntoVO(float3 pA, float3 vA, float3 pB, float3 vB, float combinedRadius) {
+                float3 relPos = pB - pA;
+                float3 relVel = vA - vB;
+                float distSq = math.lengthsq(relPos);
+                float radSq = combinedRadius * combinedRadius;
+                float3 unitRelPos = math.normalize(relPos);
+                float3 u;
+                if (distSq < radSq) {
+                    // Already in collision
+                    u = (math.normalize(relVel) * (combinedRadius - math.sqrt(distSq))) - relVel;
+                } else {
+                    // Compute tangents and determine velocity shift
+                    float invTimeHorizon = 1.0f; // Could be adjusted
+                    float3 w = relVel - invTimeHorizon * relPos;
+                    float wLength = math.length(w);
+                    float3 unitW = w / (wLength + 1e-6f);
+                    u = unitW * (combinedRadius / (invTimeHorizon + 1e-6f)) - relVel;
+                }
+                return u;
+            }
 
             // helper: process a potential candidate velocity
-            public float2 CalculatePenalty(int index, float3 candidate_velocity, float3 preferred_velocity, float3 pA, float3 vA, int n_neighbors, bool c) {
+            public float2 CalculatePenalty(int index, float3 candidate_velocity, float3 preferred_velocity, float3 pA, float3 vA, int n_neighbors, bool c)
+            {
                 // Initialize the distance cost, time cost, and inertia costs
                 float distance_cost = math.length(candidate_velocity - preferred_velocity);
                 float time_cost = 100000f;
                 float inertia_cost = math.length(candidate_velocity - vA) * inertia_factors[index];
                 float ct;
                 // Given the candidate velocity, iterate through our neighbors
-                for(int j = 0; j < n_neighbors; j++) {
+                for (int j = 0; j < n_neighbors; j++)
+                {
                     // Get the position and velocity of the other agent
                     int neighbor_index = neighbor_indices[index * max_neighbors + j];
                     float3 pB = positions[neighbor_index];
                     float3 vB = velocities[neighbor_index];
                     float rB = radii[neighbor_index];
+                    float mink_sum = radii[index] + rB;
+
                     // Different from HRVO: Compute rel_v, then compute the amont of displacement to excit the VO
-                    float3 vRel = 0.5f*(candidate_velocity + vA) - vB;
-                    float3 u = computeDisplacementToExitVO(pA, pB, vRel, radii[index]+rB);
+                    // Same as RVO for now.
+                    float3 rel_vel = (1f/responsibility_factors[index])*candidate_velocity + (1f-(1f/responsibility_factors[index]))*vA - vB;
+                    // Given the apex and sides of the VO of our neighbor, we must check how valid the candidate is depending on the side it lands on.
+                    float3 u = computeDisplacementToExitVO(pA, pB, rel_vel, mink_sum);
                     // The new `translate_vb_va` is dependent on a new `
                     float3 v_apex_hrvo = vB + 0.5f * u;
                     float3 translate_vb_va = candidate_velocity - v_apex_hrvo;
+                    /*
+                    float3 vAB = vA - vB;
+                    float3 u = ProjectOntoVO(pA, candidate_velocity, pB, vB, radii[index] + rB);
+                    float3 hrvo_apex = vA + 0.5f * (u - vAB);
+                    float3 translate_vb_va = candidate_velocity - hrvo_apex;
+                    */
                     // calculate time to collision for this agent
                     //float3 translate_vb_va = (1f/responsibility_factors[index])*candidate_velocity + (1f-(1f/responsibility_factors[index]))*vA - vB;
                     //float mink_sum = radii[index] + radii[neighbor_index];
-                    float mink_sum = radii[index] + rB;
                     float time = TimeToCollision(pA, translate_vb_va, pB, mink_sum, c);
                     ct = time;
-                    if (c) ct = -(time / deltaTime) - (absSq(candidate_velocity)/sq(max_speeds[index]));
+                    if (c) ct = -(time / deltaTime) - (absSq(candidate_velocity) / sq(max_speeds[index]));
                     // If the current time to collision is less than the time cost, then we set it
                     if (ct < time_cost) time_cost = ct;
                 }
@@ -263,7 +331,7 @@ namespace RVO {
 
             public void Execute(int index) {
                 // Skip entirely if we're inactive
-                if (!active[index]) {
+                if (!active[index] || reached_destination[index]) {
                     new_velocities[index] = new float3(0f,0f,0f);
                     return;
                 }

@@ -20,6 +20,7 @@ namespace RVO {
                 positions = this.positions,
                 velocities = this.velocities,
                 destinations = this.destinations,
+                reached_destination = this.reached_destination,
                 neighbor_indices = this.neighbor_indices,
                 num_neighbors = this.num_neighbors,
                 colliding = this.colliding,
@@ -48,6 +49,7 @@ namespace RVO {
         [ReadOnly] public NativeArray<float3> positions;       // List of all positions of all agents
         [ReadOnly] public NativeArray<float3> velocities;      // List of all velocities of all agents
         [ReadOnly] public NativeArray<float3> destinations;    // List of all destinations of all agents
+        [ReadOnly] public NativeArray<bool> reached_destination;    // List of all agents who reached their destinations
         [ReadOnly] public NativeArray<int> neighbor_indices;    // List of, upwards to 8, neighbors of all agents
         [ReadOnly] public NativeArray<int> num_neighbors;       // List of the number of neighbors of all agents
         [ReadOnly] public NativeArray<bool> colliding;       // List of checks for collisions of all agents
@@ -133,8 +135,8 @@ namespace RVO {
         }
 
         public void Execute(int index) {
-            // Skip entirely if we're inactive
-            if (!active[index]) {
+            // Skip entirely if we're inactive or already reached our destination
+            if (!active[index] || reached_destination[index]) {
                 new_velocities[index] = new float3(0f,0f,0f);
                 return;
             }
