@@ -125,7 +125,7 @@ namespace RVO {
             */
 
             // Determine the VO operation to use
-            if (rvo_method == RVOMethod.RVO)        vo_op = new HRVO_OP();
+            if (rvo_method == RVOMethod.RVO)        vo_op = new RVO_OP();
             else if (rvo_method == RVOMethod.HRVO)  vo_op = new HRVO_OP();
             else                                    vo_op = new VO_OP();
             vo_op.Initialize(this);

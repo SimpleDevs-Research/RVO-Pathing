@@ -22,36 +22,59 @@ using Unity.Burst;
 namespace RVO {
     public class HRVO_OP : VO_OP
     {
-        JobHandle apex_handle = default;
-        JobHandle jobHandle = default;
+        JobHandle neighborJobHandle = default;
+        JobHandle hrvoJobHandle = default;
 
         [System.Serializable]
-        public struct NeighborApex {
-            public int neighbor_index;
-            public float3 apex;
+        public struct VOSides {
             public float3 side1;
             public float3 side2;
+            public VOSides(float3 s1, float3 s2) {
+                this.side1 = s1;
+                this.side2 = s2;
+            }
+            public string ToString() { return side1.ToString() + " --- " + side2.ToString(); }
         }
 
-        // We set up a NativeArray just for HRVO - one that stores neighbor apexes
-        public NativeArray<NeighborApex> apexes;
+        public NativeArray<VOSides> vo_sides;
+        private VOSides[] agent_vo_sides;
 
-        // We override `Initialize()` to account for the new `apexes` nativearray
-        public override void Initialize(Generator generator)
-        {
-            // Still call base initializer
+        // Need to override the Initialize function to add a new native array for VO side tangents
+        public override void Initialize(Generator generator) {
             base.Initialize(generator);
-            // Now initialize apexes
-            apexes = new NativeArray<NeighborApex>(generator.num_agents, Allocator.Persistent);
+            this.vo_sides = new NativeArray<VOSides>(generator.num_agents * generator.max_neighbors, Allocator.Persistent);
+            agent_vo_sides = new VOSides[this.vo_sides.Length];
         }
 
-        public override void Execute(float deltaTime, int num_threads = 64) {
-            var job = new HRVOJobParallelFor() {
+        public override void Execute(float deltaTime, int num_threads = 128) {
+            /*
+            var neighbors_job = new NeighborSidesJobParallelFor() {
+                active = this.active,
+                reached_destination = this.reached_destination,
+                positions = this.positions,
+                velocities = this.velocities,
+                neighbor_indices = this.neighbor_indices,
+                num_neighbors = this.num_neighbors,
+                radii = this.radii,
+                max_neighbors = generator.max_neighbors,
+                vo_sides = this.vo_sides
+            };
+            neighborJobHandle = neighbors_job.Schedule(this.positions.Length, num_threads);
+            neighborJobHandle.Complete();
+
+            this.vo_sides.CopyTo(agent_vo_sides);
+            for(int i = 0; i < agent_vo_sides.Length; i++) {
+                Debug.Log($"{i}: {agent_vo_sides[i].ToString()}");
+            }
+            */
+            
+            var hrvo_job = new HRVOJobParallelFor() {
                 positions = this.positions,
                 velocities = this.velocities,
                 destinations = this.destinations,
                 reached_destination = this.reached_destination,
                 neighbor_indices = this.neighbor_indices,
+                //vo_sides = this.vo_sides,
                 num_neighbors = this.num_neighbors,
                 colliding = this.colliding,
                 active = this.active,
@@ -67,109 +90,74 @@ namespace RVO {
                 // The output
                 new_velocities = this.new_velocities
             };
-            jobHandle = job.Schedule(this.positions.Length, num_threads);
-            jobHandle.Complete();
+            //hrvoJobHandle = hrvo_job.Schedule(this.positions.Length, num_threads, neighborJobHandle);
+            hrvoJobHandle = hrvo_job.Schedule(this.positions.Length, num_threads);
+            hrvoJobHandle.Complete();
+            
+
         }
 
-        // We override the `Terminate()` function to dispose the new `apexes` nativearray
+        // Need to override the Terminate method to account for the new vo_sides native array
         public override void Terminate() {
-            // Still have to call the base Terminate()
             base.Terminate();
-            // Now dispose apexes
-            if (apexes.IsCreated) apexes.Dispose();
+            if (vo_sides.IsCreated) vo_sides.Dispose();
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        struct ApexJobParallelFor : IJobParallelFor {
-            // Read-Only Buffers
-            [ReadOnly] public NativeArray<bool> active;             // List of active agents
-            [ReadOnly] public NativeArray<float3> positions;        // List of all positions of all agents
-            [ReadOnly] public NativeArray<float3> velocities;       // List of all velocities of all agents
-            [ReadOnly] public NativeArray<float3> destinations;    // List of all destinations of all agents
-            [ReadOnly] public NativeArray<float> radii;             // The spatial radius of all agents.
-            [ReadOnly] public NativeArray<float> max_speeds;        // The maximum speeds of all agents.
+        struct NeighborSidesJobParallelFor : IJobParallelFor {
+            // Current Agent States
+            [ReadOnly] public NativeArray<bool> active;
+            [ReadOnly] public NativeArray<bool> reached_destination;
+            [ReadOnly] public NativeArray<float3> positions;       // List of all positions of all agents
+            [ReadOnly] public NativeArray<float3> velocities;      // List of all velocities of all agents
             [ReadOnly] public NativeArray<int> neighbor_indices;    // List of, upwards to 8, neighbors of all agents
-            [ReadOnly] public NativeArray<bool> neighbor_collisions;    // List of colliding neighbors for all agents
             [ReadOnly] public NativeArray<int> num_neighbors;       // List of the number of neighbors of all agents
-            // Read-Only variables
-            [ReadOnly] public float deltaTime;                      // Time step
+            [ReadOnly] public NativeArray<float> radii;             // The expected radius of all agents.
+            // Global parameters
             [ReadOnly] public int max_neighbors;                    // The maximum number of neighbors possible
 
-            // Output buffers
-            [WriteOnly] public NativeArray<NeighborApex> apexes;
+            // Outputs
+            [WriteOnly] public NativeArray<VOSides> vo_sides;    // The VO sides for each neighbor for all agents
 
-            // Helper: calcualte determinatne of two float2's
-            public float det(float3 a, float3 b)
-            {
-                return a.x * b.z - a.z * b.x;
-            }
-            // Helper: calculate the normal vector
-            public float3 normal(float3 v1, float3 v2) {
-                return math.normalize(new float3(v2.z - v1.z, 0f, v1.x - v2.x));
+            // Helper function: rotate a vector given the center vector and the angle of separation
+            public float3 RotateVector(float3 v, float angleRadians) {
+                float cos = math.cos(angleRadians);
+                float sin = math.sin(angleRadians);
+                // Rotate around Y-axis (XZ plane)
+                float x = v.x * cos - v.z * sin;
+                float z = v.x * sin + v.z * cos;
+                return new float3(x, 0f, z); // Keep y = 0
             }
 
+            // Execute
             public void Execute(int agent_index) {
-                // Skip if we're inactive
-                if (!active[agent_index]) return;
-
+                // Disable if we are inactive or we already reached our destination
+                if (!active[agent_index] || reached_destination[agent_index]) return;
+                // For each neighbor, calculate the displacement characteristics
                 float3 pA = positions[agent_index];
                 float3 vA = velocities[agent_index];
                 float rA = radii[agent_index];
-                float3 vprefA = math.normalize(destinations[agent_index] - pA) * max_speeds[agent_index];
+                int n = num_neighbors[agent_index];
+                // If no neighbors, don't bother
+                if (n == 0) return;
 
-                // Iterate through all known neighbors
-                for (int i = 0; i < num_neighbors[agent_index]; i++)
+                for (int j = 0; j < n; j++)
                 {
-                    // basics of our neighbor
-                    int ni = neighbor_indices[agent_index * max_neighbors + i];
-                    float3 pB = positions[ni];
-                    float3 vB = velocities[ni];
-                    float rB = radii[ni];
-                    float3 vprefB = math.normalize(destinations[ni] - pB) * max_speeds[ni];
-                    bool colliding = neighbor_collisions[ni];
-                    // Calculate some relative vectors
-                    float3 rel_pos = pA - pB;
-                    float3 rel_vel = vA - vB;
-                    float comb_radius = rA + rB;
-                    // Initialize the things we want to ultimately measure
-                    float3 apex, side1, side2;
-                    // Check: are we colliding with them?
-                    if (!colliding)
-                    {
-                        // They're at least some distance between us and them.
-                        float angle = math.atan2(rel_pos.z, rel_pos.x);
-                        float opening_angle = math.asin(comb_radius / math.length(rel_pos));
-                        side1 = new float3(
-                            math.cos(angle - opening_angle),
-                            0f,
-                            math.sin(angle - opening_angle)
-                        );
-                        side2 = new float3(
-                            math.cos(angle + opening_angle),
-                            0f,
-                            math.sin(angle + opening_angle)
-                        );
-                        float d = 2f * math.sin(opening_angle) * math.cos(opening_angle);
-                        if (det(rel_pos, vprefA - vprefB) > 0f)
-                        {
-                            float s = 0.5f * det(rel_vel, side2) / d;
-                            apex = vB + s * side1;
-                        }
-                        else
-                        {
-                            float s = 0.5f * det(rel_vel, side1) / d;
-                            apex = vB + s * side2;
-                        }
-                    }
-                    else
-                    {
-                        // Pull out immediately!
-                        apex = 0.5f * (vB + vA) - (0.5f * (comb_radius - math.length(rel_pos)) / deltaTime) * math.normalize(rel_pos);
-                        side1 = normal(pA, pB);
-                        side2 = -side1;
-                    }
-                    // After calculating apex, side1, and side2, cache these results
-                    apexes[i] = new NeighborApex() { neighbor_index = ni, apex = apex, side1 = side1, side2 = side2 };
+                    // Get characteristics about each neighbor
+                    int neighbor_index = neighbor_indices[agent_index * max_neighbors + j];
+                    float3 pB = positions[neighbor_index];
+                    float3 vB = velocities[neighbor_index];
+                    float rB = radii[neighbor_index];
+                    // Start calculating the displacement vector
+                    float3 ba = pB - pA;
+                    float dist = math.length(ba);
+                    float3 dir = ba / dist;
+                    // calculate the angle
+                    float angle = math.asin((rA+rB) / dist);
+                    float3 side1 = RotateVector(dir, angle);
+                    float3 side2 = RotateVector(dir, -angle);
+                    // Given both sides, record the side data for each neighbor
+                    vo_sides[agent_index * max_neighbors + j] = new VOSides(side1, side2);
                 }
             }
         }
@@ -182,6 +170,7 @@ namespace RVO {
             [ReadOnly] public NativeArray<float3> destinations;    // List of all destinations of all agents
             [ReadOnly] public NativeArray<bool> reached_destination;  // List of all agents who reached their destinations
             [ReadOnly] public NativeArray<int> neighbor_indices;    // List of, upwards to 8, neighbors of all agents
+            //[ReadOnly] public NativeArray<VOSides> vo_sides;
             [ReadOnly] public NativeArray<int> num_neighbors;       // List of the number of neighbors of all agents
             [ReadOnly] public NativeArray<bool> colliding;       // List of checks for collisions of all agents
             [ReadOnly] public NativeArray<bool> active;
@@ -259,27 +248,6 @@ namespace RVO {
                 float3 u = projection - v_rel;
                 return u;
             }
-            
-            public float3 ProjectOntoVO(float3 pA, float3 vA, float3 pB, float3 vB, float combinedRadius) {
-                float3 relPos = pB - pA;
-                float3 relVel = vA - vB;
-                float distSq = math.lengthsq(relPos);
-                float radSq = combinedRadius * combinedRadius;
-                float3 unitRelPos = math.normalize(relPos);
-                float3 u;
-                if (distSq < radSq) {
-                    // Already in collision
-                    u = (math.normalize(relVel) * (combinedRadius - math.sqrt(distSq))) - relVel;
-                } else {
-                    // Compute tangents and determine velocity shift
-                    float invTimeHorizon = 1.0f; // Could be adjusted
-                    float3 w = relVel - invTimeHorizon * relPos;
-                    float wLength = math.length(w);
-                    float3 unitW = w / (wLength + 1e-6f);
-                    u = unitW * (combinedRadius / (invTimeHorizon + 1e-6f)) - relVel;
-                }
-                return u;
-            }
 
             // helper: process a potential candidate velocity
             public float2 CalculatePenalty(int index, float3 candidate_velocity, float3 preferred_velocity, float3 pA, float3 vA, int n_neighbors, bool c)
@@ -294,28 +262,25 @@ namespace RVO {
                 {
                     // Get the position and velocity of the other agent
                     int neighbor_index = neighbor_indices[index * max_neighbors + j];
+                    //VOSides sides = vo_sides[index * max_neighbors + j];
                     float3 pB = positions[neighbor_index];
                     float3 vB = velocities[neighbor_index];
                     float rB = radii[neighbor_index];
                     float mink_sum = radii[index] + rB;
-
-                    // Different from HRVO: Compute rel_v, then compute the amont of displacement to excit the VO
-                    // Same as RVO for now.
+                    // Different from HRVO: Compute rel_vel, then compute the amont of displacement to excit the VO. Then re-estimate translate_vb_va.
                     float3 rel_vel = (1f/responsibility_factors[index])*candidate_velocity + (1f-(1f/responsibility_factors[index]))*vA - vB;
-                    // Given the apex and sides of the VO of our neighbor, we must check how valid the candidate is depending on the side it lands on.
-                    float3 u = computeDisplacementToExitVO(pA, pB, rel_vel, mink_sum);
-                    // The new `translate_vb_va` is dependent on a new `
-                    float3 v_apex_hrvo = vB + 0.5f * u;
-                    float3 translate_vb_va = candidate_velocity - v_apex_hrvo;
                     /*
-                    float3 vAB = vA - vB;
-                    float3 u = ProjectOntoVO(pA, candidate_velocity, pB, vB, radii[index] + rB);
-                    float3 hrvo_apex = vA + 0.5f * (u - vAB);
-                    float3 translate_vb_va = candidate_velocity - hrvo_apex;
+                    // Given the VOSides for this neighbor, howdo we displace the VO apex?
+                    float3 leg = math.dot(rel_vel, sides.side1) < math.dot(rel_vel, sides.side2) ? sides.side1 : sides.side2;
+                    // Project rel_vel onto leg
+                    float3 projection = math.dot(rel_vel, leg) * leg;
+                    float3 u = projection - rel_vel;
                     */
+                    float3 u = computeDisplacementToExitVO(pA, pB, rel_vel, mink_sum);
+                    float3 v_apex_hrvo = vB + 0.5f * u;
+                    // Now calculate translate_vb_va with respect to this new apex
+                    float3 translate_vb_va = candidate_velocity - v_apex_hrvo;
                     // calculate time to collision for this agent
-                    //float3 translate_vb_va = (1f/responsibility_factors[index])*candidate_velocity + (1f-(1f/responsibility_factors[index]))*vA - vB;
-                    //float mink_sum = radii[index] + radii[neighbor_index];
                     float time = TimeToCollision(pA, translate_vb_va, pB, mink_sum, c);
                     ct = time;
                     if (c) ct = -(time / deltaTime) - (absSq(candidate_velocity) / sq(max_speeds[index]));
