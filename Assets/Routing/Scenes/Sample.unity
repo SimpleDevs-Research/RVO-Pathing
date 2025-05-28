@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.9997447, g: 0.9997447, b: 0.9997447, a: 1}
+  m_IndirectSpecularColor: {r: 0.99999946, g: 0.99999946, b: 0.99999946, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -570,6 +570,58 @@ MonoBehaviour:
   affectors: []
   radius: 0.73832655
   size: 1.7125642
+--- !u!1 &236102110
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 236102112}
+  - component: {fileID: 236102111}
+  m_Layer: 0
+  m_Name: TestRouteManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &236102111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 236102110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f64bd8dd52854131b7d1f225bdbba1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  destinationRef: {fileID: 2078115603}
+  personality: {fileID: 11400000, guid: e27f6b0b1683f401f892b2fcb99fc8d7, type: 2}
+  startColor: {r: 0, g: 0, b: 1, a: 0}
+  currentColor: {r: 0, g: 1, b: 0, a: 1}
+  nextColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 0.5019608}
+  endColor: {r: 1, g: 0, b: 0, a: 0.5019608}
+  pathColor: {r: 0, g: 0, b: 0, a: 1}
+  path: []
+--- !u!4 &236102112
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 236102110}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 1.45}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &314368174
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2127,7 +2179,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1898892087
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2149,6 +2201,7 @@ MonoBehaviour:
   destination_buffer: 0.1
   spawn_orientation: 0
   bound_edge_buffer: 10
+  rvo_method: 0
   demographics:
     demographics:
     - value: {fileID: 11400000, guid: bb6b95f6d25444c8897ea537c0f85ee9, type: 2}
@@ -2158,12 +2211,8 @@ MonoBehaviour:
   num_candidate_directions: 16
   max_neighbors: 8
   visual_radius: 5
-  fps_smoothing_factor: 0.25
-  current_fps: 0
-  smoothed_fps: 0
   draw_bounds: 1
   bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  agent_penalties: []
   agent_new_velocities: []
   ped_spawn_style: 1
   start_nodes:
@@ -2639,6 +2688,37 @@ MonoBehaviour:
   affectors: []
   radius: 0.77873236
   size: 1.9051375
+--- !u!1 &2078115602
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2078115603}
+  m_Layer: 0
+  m_Name: TestRouteEnd
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2078115603
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2078115602}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.17, y: 0, z: 5.21}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2649,3 +2729,5 @@ SceneRoots:
   - {fileID: 1431366537}
   - {fileID: 963194228}
   - {fileID: 1976767657}
+  - {fileID: 236102112}
+  - {fileID: 2078115603}
