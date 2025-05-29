@@ -16,11 +16,11 @@ MonoBehaviour:
   responsibility_factor: 0.5
   safety_factor: 1
   inertia_factor: 0
-  spatial_radius: 0.25
+  spatial_radius: 0.5
   max_speed: 1
   acceleration: 3
   risk_aversion: 0
   dirtiness_aversion: 0
-  crowdedness_aversion: 0
-  distance_aversion: 0
+  crowdedness_aversion: 5
+  distance_aversion: 1
   litter_inclination: 0

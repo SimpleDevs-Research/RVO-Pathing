@@ -11,19 +11,11 @@ namespace Routing {
     {
         [Header("=== Routing Settings ===")]
         public Node start_node;
-        public Node current_node;
+        public Node next_node;
         public Node goal_node;
+        public Region current_region;
         public List<Vector3> path_points = new List<Vector3>();
         public bool calculating_path = false;
-
-        private void OnDrawGizmos()
-        {
-            Gizmos.color = Color.blue;
-            if (path_points.Count > 0)
-            {
-                foreach (Vector3 p in path_points) Gizmos.DrawSphere(p, 0.1f);
-            }
-        }
 
         // Unlike the typical Robot, which only does OnDrawGizmos, a pedestrian:
         //  1. Keeps track of a major "goal" (the Generator script only keeps the current destination along its path)
@@ -40,28 +32,27 @@ namespace Routing {
         {
             // Ensure that we're still in the navmesh
             KeepInMesh();
+            CheckCurrentRegion();
 
             // Don't do anything if we're waiting for a path
             if (calculating_path) return;
 
             // At least a subpath exists
-            if (path_points.Count >= 2 && CheckCurrentNode())
+            if (path_points.Count >= 2 && CheckNextNode())
             {
                 // Must adjust either path or node
-                Debug.Log("Current Node Checked");
                 path_points.RemoveAt(0);
                 if (path_points.Count <= 1)
                 {
-                    Debug.Log("Have to calculate entire new path");
                     // we've reached our current node. Have we reached our destination node?
-                    if (current_node == goal_node)
+                    if (next_node == goal_node)
                     {
                         Generator.current.ToggleRobot(agent_index, false);
                         //gameObject.SetActive(false);
                         return;
                     }
                     // Need to calculate the next current node
-                    StartCoroutine(CalculatePath(current_node));
+                    StartCoroutine(CalculatePath(next_node));
                 }
                 else
                 {
@@ -69,30 +60,9 @@ namespace Routing {
                     Generator.current.vo_op.reached_destination[agent_index] = false;
                 }
             }
-            else
-                {
-                    Generator.current.vo_op.reached_destination[agent_index] = false;
-                }
-
-
-            /*
-            if (Generator.current.vo_op.reached_destination[agent_index])
-            {
-                // We're within the acceptable radius of our current_destination_node
-                // If the current_destination_node is the same as our goal node already...
-                //      ... then that means we should despawn
-                if (current_destination_node == goal_node)
-                {
-                    // Despawn... by disengaginge ourselves as inactive
-                    // We do this via our Generator singleton though. This is to make sure
-                    // that the Generator has control over what happens when we despawn
-                    Generator.current.ToggleRobot(agent_index, false);
-                    return;
-                }
-                // Since current_destination_node != goal_node, then we have to repath
-                CalculatePath();
+            else {
+                Generator.current.vo_op.reached_destination[agent_index] = false;
             }
-            */
         }
 
         // Repath calculation
@@ -102,8 +72,8 @@ namespace Routing {
             calculating_path = true;
 
             // Query route manager for the next node destination
-            current_node = RouteManager.Instance.getNextNode(from_node, goal_node, personality);
-            Vector3 destination = current_node.GetRandomPoint();
+            next_node = RouteManager.Instance.getNextNode(from_node, goal_node, personality);
+            Vector3 destination = next_node.GetRandomPoint();
 
             // We got a destination, but it's not the one we'll set in Generator.
             // We need to calculate the sub-path to our destination. We do this via NavMesh
@@ -113,7 +83,7 @@ namespace Routing {
             {
                 path_found = NavMesh.CalculatePath(
                     transform.position,
-                    current_node.transform.position,
+                    destination,
                     NavMesh.AllAreas,
                     nav_path
                 );
@@ -153,7 +123,6 @@ namespace Routing {
                 NavMeshHit hit;
                 if (NavMesh.SamplePosition(transform.position, out hit, 1f, NavMesh.AllAreas))
                 {
-                    Debug.Log(hit.position);
                     transform.position = hit.position;
                     Generator.current.vo_op.positions[agent_index] = hit.position;
                 }
@@ -162,10 +131,22 @@ namespace Routing {
                 Debug.LogError(e);
             }   
         }
+
+        // What node are we currently in?
+        protected virtual void CheckCurrentRegion()
+        {
+            Region r = RouteManager.Instance.getClosestRegion(transform.position);
+            if (r != current_region)
+            {
+                if (current_region != null) current_region.RemoveRobot(this);
+                current_region = r;
+                current_region.AddRobot(this);
+            }
+        }
         
         // Do we need to repath? If so, return true.
         // Need to repath depends on either 1. Generator has detected that we reached our destination, or 2) we've passed our current destination point
-        protected virtual bool CheckCurrentNode()
+        protected virtual bool CheckNextNode()
         {
             //if (Generator.current.vo_op.reached_destination[agent_index]) return true;
             Vector3 from_path = path_points[1] - path_points[0];

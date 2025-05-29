@@ -75,8 +75,6 @@ namespace RVO {
 
         // Outputs
         protected Vector3[] agent_positions;
-        public float3[] agent_new_velocities;
-        public float3[] agent_velocities;
 
         #if UNITY_EDITOR
         // Drawing boundaries
@@ -141,8 +139,6 @@ namespace RVO {
         public virtual void Generate() {
             // Step 1: Generate some arrays specific to Generator
             this.agent_positions = new Vector3[num_agents];
-            this.agent_new_velocities = new float3[num_agents];
-            this.agent_velocities = new float3[num_agents];
             // Step 2: Use a FOR loop to instantiate agent values. Set their respective values in our native/normal arrays
             for (int i = 0; i < num_agents; i++) GenerateAgent(i);
             // Step 3: For our VO_OP, inform its transform access array
@@ -239,20 +235,23 @@ namespace RVO {
                 for(int j = 0; j < results.Count; j++) {
                     int neighbor_index = results[j].data;                   // What's the neighbor index?
                     if (neighbor_index == i) continue;                      // Skip if ourselves
-                    if (!vo_op.active[neighbor_index]) continue;                  // SKip if inactive neighbor
+                    if (!vo_op.active[neighbor_index]) continue;            // SKip if inactive neighbor
                     // Check if colliding
-                    if (results[j].distance < Mathf.Pow(vo_op.radii[i] + vo_op.radii[neighbor_index], 2)) {
-                        if (!colliding) {
+                    if (results[j].distance < Mathf.Pow(vo_op.radii[i] + vo_op.radii[neighbor_index], 2))
+                    {
+                        if (!colliding)
+                        {
                             colliding = true;
-                            n_neighbors = 0;        
+                            n_neighbors = 0;
                         }
-                        vo_op.neighbor_indices[i*max_neighbors+n_neighbors] = neighbor_index;   // Contribute to our neighbor indices
-                        vo_op.neighbor_collisions[i*max_neighbors+n_neighbors] = true;
+                        vo_op.neighbor_indices[i * max_neighbors + n_neighbors] = neighbor_index;   // Contribute to our neighbor indices
+                        vo_op.neighbor_collisions[i * max_neighbors + n_neighbors] = true;
                         n_neighbors += 1;                                                       // Increment n_neighbors
                     }
-                    else if (!colliding) {
-                        vo_op.neighbor_indices[i*max_neighbors+n_neighbors] = neighbor_index;   // Contribute to our neighbor indices
-                        vo_op.neighbor_collisions[i*max_neighbors+n_neighbors] = false;
+                    else if (!colliding)
+                    {
+                        vo_op.neighbor_indices[i * max_neighbors + n_neighbors] = neighbor_index;   // Contribute to our neighbor indices
+                        vo_op.neighbor_collisions[i * max_neighbors + n_neighbors] = false;
                         n_neighbors += 1;                                                       // Increment n_neighbors
                     }
                     if (n_neighbors == max_neighbors) break;    // Break immediately if beyond max_neighbors
@@ -269,11 +268,17 @@ namespace RVO {
             query.RadiusSort(tree, query_position, r, results);
             return results.Count > 0;
         }
+        public int QueryRadiusCount(Vector3 query_position, float r) {
+            List<int> results = new List<int>();
+            query.Radius(tree, query_position, r, results);
+            return results.Count;
+        }
 
 
         // The PROCESSING step: Using RVO mechanisms, determine the optimal velocity to move in.
         //                      Note that we require a deltaTime parameter, in case someone is using this in another update cycle
-        protected virtual void Processing(float deltaTime) {
+        protected virtual void Processing(float deltaTime)
+        {
             vo_op.Execute(deltaTime);
         }
 
@@ -305,8 +310,6 @@ namespace RVO {
         protected virtual void LateUpdate() {
             // Simpe: Rebuild our Tree after moving data from `positions` into `agent_positions`
             vo_op.positions.Reinterpret<Vector3>().CopyTo(agent_positions);
-            vo_op.new_velocities.CopyTo(agent_new_velocities);
-            vo_op.velocities.CopyTo(agent_velocities);
             tree.Rebuild();
 
             /*
