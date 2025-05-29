@@ -76,6 +76,7 @@ namespace RVO {
         // Outputs
         protected Vector3[] agent_positions;
         public float3[] agent_new_velocities;
+        public float3[] agent_velocities;
 
         #if UNITY_EDITOR
         // Drawing boundaries
@@ -86,23 +87,25 @@ namespace RVO {
             Gizmos.color = bounds_color;
             Gizmos.DrawWireCube(centroid, _bounds);
         }
-        #endif
+#endif
 
-        private void Awake() {
+        private void Awake()
+        {
             current = this;
 
             // If the agent_parent is null, we set to ourselves
             if (agent_parent == null) agent_parent = this.transform;
 
             // If camera is assigned, then prep it
-            if (scene_cam != null) {
-                Vector3 cam_pos = new Vector3(bounds.x/2f, 100f, bounds.y/2f);
+            if (scene_cam != null)
+            {
+                Vector3 cam_pos = new Vector3(bounds.x / 2f, 100f, bounds.y / 2f);
                 float screen_ratio = (float)Screen.width / (float)Screen.height;
                 float target_ratio = bounds.x / bounds.y;
-                float ortho_size = (screen_ratio >= target_ratio) 
+                float ortho_size = (screen_ratio >= target_ratio)
                     ? bounds.y / 2
                     : bounds.y / 2 * (target_ratio / screen_ratio);
-                
+
                 scene_cam.transform.position = cam_pos;
                 scene_cam.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.up);
                 scene_cam.orthographic = true;
@@ -110,9 +113,10 @@ namespace RVO {
             }
 
             // If the floor is assigned, then prep it
-            if (floor != null) {
-                floor.rotation = Quaternion.Euler(90f,0f,0f);
-                floor.position = new Vector3(bounds.x/2f, 0f, bounds.y/2f);
+            if (floor != null)
+            {
+                floor.rotation = Quaternion.Euler(90f, 0f, 0f);
+                floor.position = new Vector3(bounds.x / 2f, 0f, bounds.y / 2f);
                 floor.localScale = new Vector3(bounds.x, bounds.y, 0f);
             }
 
@@ -125,9 +129,9 @@ namespace RVO {
             */
 
             // Determine the VO operation to use
-            if (rvo_method == RVOMethod.RVO)        vo_op = new RVO_OP();
-            else if (rvo_method == RVOMethod.HRVO)  vo_op = new HRVO_OP();
-            else                                    vo_op = new VO_OP();
+            if (rvo_method == RVOMethod.RVO) vo_op = new RVO_OP();
+            else if (rvo_method == RVOMethod.HRVO) vo_op = new HRVO_OP();
+            else vo_op = new VO_OP();
             vo_op.Initialize(this);
 
             // We want to generate our agents
@@ -138,8 +142,9 @@ namespace RVO {
             // Step 1: Generate some arrays specific to Generator
             this.agent_positions = new Vector3[num_agents];
             this.agent_new_velocities = new float3[num_agents];
+            this.agent_velocities = new float3[num_agents];
             // Step 2: Use a FOR loop to instantiate agent values. Set their respective values in our native/normal arrays
-            for(int i = 0; i < num_agents; i++) GenerateAgent(i);
+            for (int i = 0; i < num_agents; i++) GenerateAgent(i);
             // Step 3: For our VO_OP, inform its transform access array
             vo_op.UpdateTransforms();     
             // Step 4: Initialize our KDTree and Query
@@ -301,6 +306,7 @@ namespace RVO {
             // Simpe: Rebuild our Tree after moving data from `positions` into `agent_positions`
             vo_op.positions.Reinterpret<Vector3>().CopyTo(agent_positions);
             vo_op.new_velocities.CopyTo(agent_new_velocities);
+            vo_op.velocities.CopyTo(agent_velocities);
             tree.Rebuild();
 
             /*

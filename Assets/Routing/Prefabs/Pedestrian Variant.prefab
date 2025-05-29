@@ -54,12 +54,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 545662937383212991, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
+    - {fileID: 4375544729189757125, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4883762459095686772}
+    - targetCorrespondingSourceObject: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1757769818932085029}
   m_SourcePrefab: {fileID: 100100000, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
 --- !u!1 &7224386501974585577 stripped
 GameObject:
@@ -80,5 +84,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agent_index: 0
   personality: {fileID: 0}
-  current_destination_node: {fileID: 0}
+  start_node: {fileID: 0}
+  current_node: {fileID: 0}
   goal_node: {fileID: 0}
+  path_points: []
+  calculating_path: 0
+--- !u!136 &1757769818932085029
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7224386501974585577}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 1, z: 0}

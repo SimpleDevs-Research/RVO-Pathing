@@ -109,12 +109,17 @@ namespace Routing {
             }
         }
 
-        private void KeepInMesh() {
+        // We want pedestrians to stay in the mesh, to make sure navmesh works
+        private void KeepInMesh()
+        {
             NavMeshHit hit;
             if (NavMesh.SamplePosition(transform.position, out hit, 1f, NavMesh.AllAreas)) transform.position = hit.position;
         }
 
-        private bool CheckCurrentNode() {
+        // Do we need to repath? If so, return true.
+        // Need to repath depends on either 1. Generator has detected that we reached our destination, or 2) we've passed our current destination point
+        private bool CheckCurrentNode()
+        {
             Vector3 fromPath = path[1] - path[0];
             Vector3 fromPosition = path[1] - transform.position;
             float dot = Vector3.Dot(fromPath, fromPosition);

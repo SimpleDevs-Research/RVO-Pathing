@@ -83,7 +83,7 @@ namespace Routing {
             pedestrians.Add(ped);
             ped.agent_index = agent_index;
             ped.personality = p;
-            ped.current_destination_node = start_node;
+            ped.start_node = start_node;
             ped.goal_node = end_node;
 
             // Step 3: Inform our agent data in vo_op
