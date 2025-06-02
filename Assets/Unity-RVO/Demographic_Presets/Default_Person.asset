@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Base
   responsibility_factor: 0.5
-  safety_factor: 1
+  safety_factor: 2
   inertia_factor: 0
-  spatial_radius: 0.5
+  spatial_radius: 0.25
   max_speed: 1
   acceleration: 3
   risk_aversion: 0

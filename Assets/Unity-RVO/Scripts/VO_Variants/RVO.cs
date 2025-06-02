@@ -86,18 +86,24 @@ namespace RVO {
             float Vab2 = absSq(Vab);
             float time;
 
+            /*
+            if (math.lengthsq(ba) < sq_diam) {
+                return 0.001f; // Immediate collision
+            }
+            */
+
             float discr = -sq(det(Vab, ba)) + sq_diam * Vab2;
             if (discr > 0f) {
                 if (c) {
                     time = (mult(Vab, ba) + math.sqrt(discr)) / Vab2;
-                    if (time < 0) time = -100000f;
+                    if (time < 0) time = float.NegativeInfinity;
                 } else {
                     time = (mult(Vab, ba) - math.sqrt(discr)) / Vab2;
-                    if (time < 0f) time = 100000f;
+                    if (time < 0f) time = float.PositiveInfinity;
                 }
             } else {
-                if (c) time = -100000f;
-                else time = 100000f;
+                if (c) time = float.NegativeInfinity;
+                else time = float.PositiveInfinity;
             }
             return time;
         }
@@ -106,7 +112,7 @@ namespace RVO {
         public float2 CalculatePenalty(int index, float3 candidate_velocity, float3 preferred_velocity, float3 pA, float3 vA, int n_neighbors, bool c) {
             // Initialize the distance cost, time cost, and inertia costs
             float distance_cost = math.length(candidate_velocity - preferred_velocity);
-            float time_cost = 100000f;
+            float time_cost = float.PositiveInfinity;
             float inertia_cost = math.length(candidate_velocity - vA) * inertia_factors[index];
             float ct;
             // Given the candidate velocity, iterate through our neighbors
@@ -128,10 +134,13 @@ namespace RVO {
                 if (ct < time_cost) time_cost = ct;
             }
             // Return the final penalty
-            return new float2(
-                safety_factors[index] / time_cost + distance_cost + inertia_cost,
-                time_cost
-            );
+            /*
+            float penalty;
+            if (time_cost <= 0f) penalty = float.PositiveInfinity;
+            else penalty = safety_factors[index] / time_cost + distance_cost + inertia_cost;
+            */
+            float penalty = safety_factors[index] / time_cost + distance_cost + inertia_cost;
+            return new float2(penalty,time_cost);
         }
 
         public void Execute(int index) {

@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Safe
   responsibility_factor: 0.5
-  safety_factor: 2
+  safety_factor: 3
   inertia_factor: 0
   spatial_radius: 0.25
   max_speed: 1
-  acceleration: 5
+  acceleration: 2
   risk_aversion: 0
   dirtiness_aversion: 0
   crowdedness_aversion: 0

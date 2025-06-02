@@ -2362,11 +2362,11 @@ MonoBehaviour:
   scene_cam: {fileID: 963194227}
   floor: {fileID: 0}
   bounds: {x: 10, y: 10}
-  num_agents: 50
+  num_agents: 20
   destination_buffer: 0.1
   spawn_orientation: 0
-  bound_edge_buffer: 10
-  rvo_method: 1
+  bound_edge_buffer: 15
+  rvo_method: 0
   demographics:
     demographics:
     - value: {fileID: 11400000, guid: bb6b95f6d25444c8897ea537c0f85ee9, type: 2}

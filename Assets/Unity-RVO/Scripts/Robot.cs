@@ -18,14 +18,17 @@ namespace RVO {
         protected void OnDrawGizmosSelected() {
             if (!Application.isPlaying) return;
             if (Generator.current == null) return;
-            // show neighbors
-            Gizmos.color = neighbor_color;
+            // Draw ourselves
             Vector3 pA = Generator.current.vo_op.positions[agent_index];
+            Gizmos.color = Color.black;
+            Gizmos.DrawWireSphere(pA, personality.spatial_radius);
+            // show neighbors
+            Gizmos.color = Generator.current.vo_op.colliding[agent_index] ? Color.red : Color.blue;
             for(int i = 0; i < Generator.current.vo_op.num_neighbors[agent_index]; i++) {
                 int neighbor_index = Generator.current.vo_op.neighbor_indices[agent_index*Generator.current.max_neighbors+i];
                 Vector3 pB = Generator.current.vo_op.positions[neighbor_index];
                 Gizmos.DrawLine(pA,pB);
-                Gizmos.DrawWireSphere(pB,0.5f);
+                Gizmos.DrawWireSphere(pB,0.2f);
             }
             // Show new velocity
             Gizmos.color = new_velocity_color;

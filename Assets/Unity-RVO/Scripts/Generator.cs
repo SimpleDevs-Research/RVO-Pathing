@@ -441,7 +441,7 @@ namespace RVO {
                 reached_destination[index] = at_destination;
 
                 // We also need to update our transform
-                transform.position = new_position;
+                transform.localPosition = new_position;
                 // Rotation is dependent on new velocity
                 if (!at_destination && math.length(new_velocity)>0f) {
                     float3 dir_to_destination = math.normalize(diff);
