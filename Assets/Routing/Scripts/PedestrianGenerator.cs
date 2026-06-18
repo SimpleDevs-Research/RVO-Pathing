@@ -76,7 +76,7 @@ namespace Routing {
             Personality p = demographics.GetRandomPersonality();
 
             // Step 2: Instantiate the agent itself
-            GameObject go = Instantiate(agent_prefab, pos, Quaternion.LookRotation(forward));
+            GameObject go = Instantiate(p.agent_prefab, pos, Quaternion.LookRotation(forward));
             Transform t = go.transform;
             t.parent = agent_parent;
             Pedestrian ped = t.GetComponent<Pedestrian>();

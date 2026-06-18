@@ -71,7 +71,7 @@ namespace RVO {
         // This is called whenever a new agent is added
         public virtual void AddAgent(int agent_index, Vector3 pos, Vector3 dest, Transform t, Personality p) {
             // Step 1: Basics
-            this.active[agent_index] = true;
+            this.active[agent_index] = t.gameObject.activeInHierarchy;
             this.positions[agent_index] = pos;
             this.velocities[agent_index] = Vector3.zero;
             this.destinations[agent_index] = dest;

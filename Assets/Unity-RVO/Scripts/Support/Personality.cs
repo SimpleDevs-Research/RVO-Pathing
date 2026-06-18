@@ -4,6 +4,9 @@ using UnityEngine;
 public class Personality : ScriptableObject
 {
     public string id;
+
+    [Header("=== Prefab ===")]
+    public GameObject agent_prefab;
     
     [Header("=== RVO ===")]
     [Range(0f,1f)] public float responsibility_factor;

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Default_Person
   m_EditorClassIdentifier: 
   id: Base
+  agent_prefab: {fileID: 5177237746849340158, guid: 2104a5e757087284582c239543f1a3b5, type: 3}
   responsibility_factor: 0.5
   safety_factor: 2
   inertia_factor: 0

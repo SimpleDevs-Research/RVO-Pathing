@@ -29,7 +29,6 @@ namespace RVO {
 
         [Header("=== References, Environment Setup ===")]
         [Tooltip("The Transform parent of all agents")]         public Transform agent_parent;
-        [Tooltip("The agent prefab that should be spawned")]    public GameObject agent_prefab;
         [Tooltip("The main camera (Optional)")]                 public Camera scene_cam;
         [Tooltip("The floor transform (Optional)")]             public Transform floor;
         [Space]
@@ -187,7 +186,7 @@ namespace RVO {
             Personality p = demographics.GetRandomPersonality();
 
             // Step 2: Instantiate the agent itself
-            GameObject go = Instantiate(agent_prefab, pos, Quaternion.LookRotation(forward));
+            GameObject go = Instantiate(p.agent_prefab, pos, Quaternion.LookRotation(forward));
             Transform t = go.transform;
             t.parent = agent_parent;
 

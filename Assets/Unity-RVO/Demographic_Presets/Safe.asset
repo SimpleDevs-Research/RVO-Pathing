@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Safe
   m_EditorClassIdentifier: 
   id: Safe
+  agent_prefab: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
   responsibility_factor: 0.5
   safety_factor: 3
   inertia_factor: 0
