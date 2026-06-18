@@ -293,6 +293,7 @@ namespace RVO {
                 destination_buffer = destination_buffer,
                 positions = vo_op.positions,
                 velocities = vo_op.velocities,
+                max_rotation_speeds = vo_op.max_rotation_speeds,
                 reached_destination = vo_op.reached_destination
             };
             velocityJobHandle = movement_job.Schedule(vo_op.transforms);
@@ -387,6 +388,7 @@ namespace RVO {
             [ReadOnly] public NativeArray<float3> new_velocities;
             [ReadOnly] public NativeArray<float> accelerations;
             [ReadOnly] public NativeArray<float3> destinations;
+            [ReadOnly] public NativeArray<float> max_rotation_speeds;
             [ReadOnly] public NativeArray<bool> active;
 
             // Delta time must be copied to the job since jobs generally don't have concept of a frame.
@@ -446,8 +448,7 @@ namespace RVO {
                     float3 dir_to_destination = math.normalize(diff);
                     quaternion currentRotation = transform.localRotation;
                     quaternion targetRotation = quaternion.LookRotation(math.normalize(new_velocity), new float3(0,1,0));
-                    float turnSpeed = 10f;
-                    float t = math.saturate(turnSpeed * deltaTime);
+                    float t = math.saturate(max_rotation_speeds[index] * deltaTime);
                     transform.localRotation = math.slerp(
                         currentRotation,
                         targetRotation,

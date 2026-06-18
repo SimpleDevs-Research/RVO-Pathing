@@ -31,6 +31,7 @@ namespace RVO {
         // Additional RVO qualities important to VO/RVO/Etc.
         public NativeArray<float> radii;
         public NativeArray<float> max_speeds;
+        public NativeArray<float> max_rotation_speeds;
         public NativeArray<float> accelerations;
         // Usually outputs
         public NativeArray<float3> new_velocities;
@@ -62,6 +63,7 @@ namespace RVO {
             this.inertia_factors = new NativeArray<float>(n, Allocator.Persistent);
             this.radii = new NativeArray<float>(n, Allocator.Persistent);
             this.max_speeds = new NativeArray<float>(n, Allocator.Persistent);
+            this.max_rotation_speeds = new NativeArray<float>(n, Allocator.Persistent);
             this.accelerations = new NativeArray<float>(n, Allocator.Persistent);
             // Step 2d: Outputs
             this.new_velocities = new NativeArray<float3>(n, Allocator.Persistent);
@@ -91,6 +93,7 @@ namespace RVO {
             this.inertia_factors[agent_index] = p.inertia_factor;
             this.radii[agent_index] = p.spatial_radius;
             this.max_speeds[agent_index] = p.max_speed;
+            this.max_rotation_speeds[agent_index] = p.max_rotation_speed;
             this.accelerations[agent_index] = p.acceleration;
             // Step 4: Outputs
             this.new_velocities[agent_index] = Vector3.zero;
@@ -124,6 +127,7 @@ namespace RVO {
             if (this.inertia_factors.IsCreated) this.inertia_factors.Dispose();
             if (this.radii.IsCreated) this.radii.Dispose();
             if (this.max_speeds.IsCreated) this.max_speeds.Dispose();
+            if (this.max_rotation_speeds.IsCreated) this.max_rotation_speeds.Dispose();
             if (this.accelerations.IsCreated) this.accelerations.Dispose();
             // Step 4: Outputs
             if (this.new_velocities.IsCreated) this.new_velocities.Dispose();

@@ -16,6 +16,7 @@ namespace RVO {
         [Space]
         public float spatial_radius = 0.25f;
         public float max_speed = 1f;
+        public float max_rotation_speed = 10f;   // radians per sec
         public float acceleration = 5f;
 
         [Header("=== Routing ===")]
