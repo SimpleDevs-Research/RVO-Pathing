@@ -444,7 +444,15 @@ namespace RVO {
                 // Rotation is dependent on new velocity
                 if (!at_destination && math.length(new_velocity)>0f) {
                     float3 dir_to_destination = math.normalize(diff);
-                    transform.rotation = quaternion.LookRotation(math.normalize(new_velocity), new float3(0,1,0));
+                    quaternion currentRotation = transform.localRotation;
+                    quaternion targetRotation = quaternion.LookRotation(math.normalize(new_velocity), new float3(0,1,0));
+                    float turnSpeed = 10f;
+                    float t = math.saturate(turnSpeed * deltaTime);
+                    transform.localRotation = math.slerp(
+                        currentRotation,
+                        targetRotation,
+                        t
+                    );
                 }
             }
         }
