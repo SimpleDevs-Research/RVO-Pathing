@@ -184,9 +184,10 @@ namespace RVO {
             Vector3 diff = dest - pos;
             Vector3 forward = (diff.sqrMagnitude == 0f) ? Vector3.right : diff.normalized;
             Personality p = demographics.GetRandomPersonality();
+            GameObject personality_agent_prefab = p.GetRandomAgent();
 
             // Step 2: Instantiate the agent itself
-            GameObject go = Instantiate(p.agent_prefab, pos, Quaternion.LookRotation(forward));
+            GameObject go = Instantiate(personality_agent_prefab, pos, Quaternion.LookRotation(forward));
             Transform t = go.transform;
             t.parent = agent_parent;
 

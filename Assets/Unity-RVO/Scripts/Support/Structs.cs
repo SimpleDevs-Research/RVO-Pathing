@@ -67,7 +67,7 @@ namespace RVO {
         public SpawnRate<Demographic>[] demographics;
 
         public Personality GetRandomPersonality() {
-            return GetPersonality(GetDemographic());
+            return GetDemographic().GetRandomPersonality();
         }
         public Demographic GetDemographic() {
             int r = (int)(Random.value * 100f);
@@ -80,18 +80,6 @@ namespace RVO {
                 }
             }
             return v;
-        }
-        public Personality GetPersonality(Demographic demo) {
-            int r = (int)(Random.value * 100f);
-            Personality p = demo.personalities[0].value;
-            for(int i = 0; i < demo.personalities.Length; i++) {
-                Vector2Int chance = demo.personalities[i].spawn_chance;
-                if (chance.x <= r && r < chance.y) {
-                    p = demo.personalities[i].value;
-                    break;
-                }
-            }
-            return p;
         }
     }
 }

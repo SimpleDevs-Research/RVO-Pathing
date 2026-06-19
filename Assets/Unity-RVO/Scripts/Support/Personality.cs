@@ -1,4 +1,5 @@
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace RVO {
     [CreateAssetMenu(fileName = "Personality", menuName = "Robots/Personality Type", order = 2)]
@@ -7,7 +8,7 @@ namespace RVO {
         public string id;
 
         [Header("=== Prefab ===")]
-        public GameObject agent_prefab;
+        public SpawnRate<GameObject>[] agent_prefabs;
         
         [Header("=== RVO ===")]
         [Range(0f,1f)] public float responsibility_factor;
@@ -25,6 +26,19 @@ namespace RVO {
         public float crowdedness_aversion;
         public float distance_aversion;
         public float litter_inclination;
+
+        public GameObject GetRandomAgent() {
+            int r = (int)(Random.value * 100f);
+            GameObject go = agent_prefabs[0].value;
+            for(int i = 0; i < agent_prefabs.Length; i++) {
+                Vector2Int chance = agent_prefabs[i].spawn_chance;
+                if (chance.x <= r && r < chance.y) {
+                    go = agent_prefabs[i].value;
+                    break;
+                }
+            }
+            return go;
+        }
     }
 
 }

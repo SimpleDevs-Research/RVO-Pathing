@@ -14,11 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Runner
   agent_prefab: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
+  agent_prefabs:
+  - value: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
+    spawn_chance: {x: 0, y: 100}
   responsibility_factor: 0.1
   safety_factor: 1
   inertia_factor: 0
   spatial_radius: 0.5
   max_speed: 2
+  max_rotation_speed: 10
   acceleration: 5
   risk_aversion: 0
   dirtiness_aversion: 0
