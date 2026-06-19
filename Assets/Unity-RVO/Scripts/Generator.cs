@@ -198,6 +198,7 @@ namespace RVO {
             Robot ad = go.GetComponent<Robot>();
             if (ad != null) {
                 ad.agent_index = agent_index;
+                ad.generator = this;
                 ad.personality = p;
             }
         }
