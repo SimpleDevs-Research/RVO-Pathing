@@ -12,6 +12,7 @@ namespace RVO {
 
         // Native arrays that stores info on all on all agents
         // Basics
+        public NativeParallelMultiHashMap<int, int> grid;
         public NativeArray<bool> active;
         public NativeArray<float3> positions;       // Agent positions
         public NativeArray<float3> velocities;      // Agent velocities
@@ -46,6 +47,7 @@ namespace RVO {
             // Step 2: Initialize the native arrays based on `num_agents`
             int n = generator.num_agents;
             // Step 2a: Basics
+            this.grid = new NativeParallelMultiHashMap<int, int>(n, Allocator.Persistent);
             this.active = new NativeArray<bool>(n, Allocator.Persistent);
             this.positions = new NativeArray<float3>(n, Allocator.Persistent);
             this.velocities = new NativeArray<float3>(n, Allocator.Persistent);
@@ -111,6 +113,7 @@ namespace RVO {
         // This is called when the generator is terminated
         public virtual void Terminate() {
             // Step 1: Basics
+            if (this.grid.IsCreated) this.grid.Dispose();
             if (this.active.IsCreated) this.active.Dispose();
             if (this.positions.IsCreated) this.positions.Dispose();
             if (this.velocities.IsCreated) this.velocities.Dispose();

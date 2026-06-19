@@ -185,6 +185,8 @@ MonoBehaviour:
   num_candidate_directions: 24
   max_neighbors: 48
   visual_radius: 5
+  visionMethod: 1
+  grid_cell_size: 5
   draw_bounds: 1
   bounds_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1 &963194225
