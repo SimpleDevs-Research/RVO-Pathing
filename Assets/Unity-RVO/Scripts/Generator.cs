@@ -29,54 +29,6 @@ namespace RVO {
         public enum VisionMethod { KDTree, SpatialHash }
         public enum RVOMethod { RVO, HRVO }
 
-        [System.Serializable]
-        public class NonAgent {
-            public Transform transform;
-            public Transform parent;
-            public float radius;
-
-            // Outputs
-            public int agent_index;   // This can change between scenes
-            public bool active = false;
-            public Vector3 position = Vector3.zero;
-            public Vector3 velocity = Vector3.zero;
-            [HideInInspector] private Vector3 prev_position = Vector3.zero;          
-            public Vector3 localPosition => (this.parent != null) 
-                ? this.parent.InverseTransformPoint(this.transform.position)
-                : this.transform.localPosition;
-
-            // Methods
-            public void Initialize(int agent_index) {
-                // Update agent index
-                this.agent_index = agent_index;
-                
-                // Auto-default if our transform is null.
-                if (this.transform == null) {
-                    this.active = false;
-                    return;
-                }
-                // Make sure we haven't accidentally forgotten about the parent.
-                if (this.parent == null) this.parent = this.transform.parent;
-                // Set some primers
-                this.active = this.transform.gameObject.activeInHierarchy;
-                this.position = this.localPosition;
-                this.velocity = Vector3.zero;
-                this.prev_position = this.position;
-            }
-            public void Update(float deltaTime) {
-                // Auto-default to inactive if our transform is null.
-                if (this.transform == null) {
-                    this.active = false;
-                    return;
-                }
-                // Otherwise, set up values
-                this.active = this.transform.gameObject.activeInHierarchy;
-                this.position = this.localPosition;
-                this.velocity = (position - prev_position) / deltaTime;
-                this.prev_position = this.position;
-            }
-        }
-
         [Header("=== References, Environment Setup ===")]
         [Tooltip("The Transform parent of all agents")]         public Transform agent_parent;
         [Tooltip("The main camera (Optional)")]                 public Camera scene_cam;
@@ -89,9 +41,8 @@ namespace RVO {
         [Tooltip("Distance between start and end pos. ONLY with a non-random spawn orientation")]   public float bound_edge_buffer = 10f;
         
         [Header("=== Non-Agent Trackables ===")]
-        [Tooltip("Buffer number of expected non-agent trackables that should be considered.")]                              public int num_non_agents = 0;
-        [Tooltip("Buffer Array of transforms that ought to be tracked initially. Size cannot exceed `num_non_agents`.")]    public NonAgent[] initial_non_agents;
-        [SerializeField] private NonAgent[] non_agents;             // The TRUE array of non_agents. `initial_non_agents` is purely for inspector reasons
+        [Tooltip("Buffer number of expected non-agent trackables that should be considered.")]                          public int num_non_agents = 0;
+        [Tooltip("List of transforms that ought to be tracked as non-agents. Size cannot exceed `num_non_agents`.")]    public List<NonAgent> non_agents;
         public int num_total_agents => num_agents + num_non_agents; // Total number of agents
         
         [Header("=== RVO Global Settings ===")]
@@ -200,9 +151,8 @@ namespace RVO {
             this.agent_positions = new Vector3[num_total_agents];
             // Step 2a: Use a FOR loop to instantiate agent-only values. Set their respective values in our native/normal arrays
             for (int i = 0; i < num_agents; i++) GenerateAgent(i);
-            // Step 2b. Use a FOR loop to initialize non-agent values.
-            non_agents = new NonAgent[num_non_agents];
-            for(int j = 0; j < num_non_agents; j++) GenerateNonAgent(j);
+            // Step 2b. Search for non-agents. Then use a FOR loop to initialize non-agent values.
+            GenerateNonAgents();
             // Step 3: For our VO_OP, inform its transform access array
             vo_op.UpdateTransforms();     
             // Step 4: Initialize our KDTree and Query
@@ -269,40 +219,35 @@ namespace RVO {
             }
         }
 
-        // Unlike the typical `GenerateAgent(int)` function, we don't instantiate these agents or anything.
-        // We rely on `non_agents` for this. We allocate a certain buffer size to all our array buffers for this
-        // We need to populate those portions of those array buffers.
-        protected virtual void GenerateNonAgent(int agent_index) {
-            // First, let's migrate `NonAgent` from `initial_non_agents` to `non_agents` if it is set. If not, we create a dummy instance
-            non_agents[agent_index] = (agent_index < initial_non_agents.Length)
-                ? initial_non_agents[agent_index]
-                : new NonAgent();
-            // Second, initialize. Make sure we set agent index to consider `num_agents` too.
-            non_agents[agent_index].Initialize(num_agents + agent_index);
-            // Thirdly, update in `vo_op`
-            vo_op.UpdateNonAgent(non_agents[agent_index]);
-        }
-
-        // This is a special function. Let's say we want to `add` a new NonAgent.
-        // Most likely, they'll need to be updated with a new agent index and whatnot.
-        // However, what's easier is to replace the reference in the array. Then we just
-        // Need to make sure that the `agent_index` is properly assigned.
-        // HOWEVER, we can only go so far until we reach the maximum allowed non_agents...
-        public virtual bool TryAddNonAgent(NonAgent new_agent) {
-            // We need to loop: find if there's any entries in `non_agents` that can be replaced
-            // Condition for replacement: its `transform` is null.
-            for(int i = 0; i < non_agents.Length; i++) {
-                if (non_agents[i].transform == null) {
-                    new_agent.Initialize(non_agents[i].agent_index);    // Initialize new non_agent
-                    vo_op.UpdateNonAgent(new_agent);                    // Update `vo_op`
-                    vo_op.UpdateTransforms();
-                    non_agents[i] = new_agent;                          // Save a reference to it.
-                    return true;
+        protected virtual void GenerateNonAgents() {
+            // We search the hierarchy for all game objects with the `NonAgent` component
+            // There may be more or less than `num_non_agents`
+            NonAgent[] detected_non_agents = FindObjectsByType<NonAgent>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None
+            );
+            // Start to populate `non_agents` list. At most, we can have `num_non_agents` amount of NonAgents.
+            // if we happen to detect a smaller number than expected, then we need to fill the remaining amount
+            // in our NativeArrays with dummy data and set them to be inactive.
+            non_agents = new List<NonAgent>();
+            for(int i = 0; i < num_non_agents; i++) {
+                if (i < detected_non_agents.Length ) {
+                    // This is a legit robot. We must Initialize it and add to our NativeArray
+                    NonAgent robot = detected_non_agents[i];
+                    robot.agent_index = num_agents + i;
+                    robot.generator = this;
+                    robot.prev_position = robot.position;
+                    vo_op.AddNonAgent(robot);
+                    non_agents.Add(robot);
+                } 
+                else {
+                    // This is a dummy; no record exists in the detected agents. So we must fill with dummy data
+                    vo_op.AddNonAgent(num_agents + i);
                 }
             }
-            // If reached here, then no valids
-            Debug.LogError("Unable to add new non-agent: exceeded maximum number of allowed non-agents without replacing existing references.");
-            return false;
+
+            // Unfortunately for this part, if we happened to detect more than the max number of `non_agents`, then 
+            // We have to leave them alone...
         }
 
 
@@ -322,7 +267,7 @@ namespace RVO {
         // The UPDATE NON-AGENTS step. For each non-agent, update and then migrate data to our Array Buffers
         protected virtual void UpdateNonAgents(float deltaTime) {
             foreach(NonAgent non_agent in non_agents) {
-                non_agent.Update(deltaTime);
+                non_agent.UpdateAgent(deltaTime);
                 vo_op.UpdateNonAgent(non_agent);
             }
         }

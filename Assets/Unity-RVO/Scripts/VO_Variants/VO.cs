@@ -118,13 +118,29 @@ namespace RVO {
         // - positions (in local space)
         // - velocities (in local space)
         // - radii
-        // This is used for when we both add and update non-agents
-        // Just make sure to call `Initialize()` for that `NonAgent` BEFORE you call this.
-        public virtual void UpdateNonAgent(Generator.NonAgent non_agent) {
-            // We initialize if we haven't.
+        
+        // This is for adding a non-agent.
+        public virtual void AddNonAgent(NonAgent non_agent = null) {
             int agent_index = non_agent.agent_index;
             this.active[agent_index] = non_agent.active;
             this.is_agent[agent_index] = false;
+            this.positions[agent_index] = non_agent.position;
+            this.velocities[agent_index] = non_agent.velocity;
+            this.radii[agent_index] = non_agent.radius;
+        }
+        // Overload to `AddNonAgent`. Means we fill with dummy data
+        public virtual void AddNonAgent(int agent_index) {
+            this.active[agent_index] = false;
+            this.is_agent[agent_index] = false;
+            this.positions[agent_index] = Vector3.zero;
+            this.velocities[agent_index] = Vector3.zero;
+            this.radii[agent_index] = 0f;
+        }
+
+        // This is only callable if `non_agent` actually exists
+        public virtual void UpdateNonAgent(NonAgent non_agent) {
+            int agent_index = non_agent.agent_index;
+            this.active[agent_index] = non_agent.active;
             this.positions[agent_index] = non_agent.position;
             this.velocities[agent_index] = non_agent.velocity;
             this.radii[agent_index] = non_agent.radius;
