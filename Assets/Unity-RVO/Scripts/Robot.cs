@@ -28,8 +28,9 @@ namespace RVO {
             for(int i = 0; i < generator.vo_op.num_neighbors[agent_index]; i++) {
                 int neighbor_index = generator.vo_op.neighbor_indices[agent_index*generator.max_neighbors+i];
                 Vector3 pB = generator.vo_op.positions[neighbor_index];
+                float neighbor_radius = generator.vo_op.radii[neighbor_index];
                 Gizmos.DrawLine(pA,pB);
-                Gizmos.DrawWireSphere(pB,0.2f);
+                Gizmos.DrawWireSphere(pB, neighbor_radius);
             }
             // Show new velocity
             Gizmos.color = new_velocity_color;
