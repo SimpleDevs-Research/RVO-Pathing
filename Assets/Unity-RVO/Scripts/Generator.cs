@@ -658,15 +658,34 @@ namespace RVO {
                 transform.localPosition = new_position;
                 // Rotation is dependent on new velocity
                 if (!at_destination && math.length(new_velocity)>0f) {
+                    quaternion current_rotation = transform.localRotation;
+                    quaternion target_rotation = quaternion.LookRotation(math.normalize(new_velocity), new float3(0,1,0));
+                    // Get the change in angle
+                    quaternion delta = math.mul(
+                        target_rotation,
+                        math.inverse(current_rotation)
+                    );
+                    // Extract angle, in radians
+                    float angle = 2f * math.acos(math.min(1f, math.abs(delta.value.w)));
+                    // Calculate the maximum rotation amount possible, in radians
+                    float maxStep = math.radians(max_rotation_speeds[index]) * deltaTime;
+                    // Calculate the ratio between the maximum step and the actual intended angle. This is capped to 1.0 (or 100%)
+                    float t = math.min(1f, maxStep / angle);
+                    // Now rotate
+                    transform.localRotation = math.slerp(
+                        current_rotation,
+                        target_rotation,
+                        t
+                    );
+                    /*
                     float3 dir_to_destination = math.normalize(diff);
-                    quaternion currentRotation = transform.localRotation;
-                    quaternion targetRotation = quaternion.LookRotation(math.normalize(new_velocity), new float3(0,1,0));
                     float t = math.saturate(max_rotation_speeds[index] * deltaTime);
                     transform.localRotation = math.slerp(
                         currentRotation,
                         targetRotation,
                         t
                     );
+                    */
                 }
             }
         }

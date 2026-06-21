@@ -13,16 +13,15 @@ MonoBehaviour:
   m_Name: Default_Person
   m_EditorClassIdentifier: 
   id: Base
-  agent_prefab: {fileID: 5177237746849340158, guid: 2104a5e757087284582c239543f1a3b5, type: 3}
   agent_prefabs:
   - value: {fileID: 5177237746849340158, guid: 2104a5e757087284582c239543f1a3b5, type: 3}
     spawn_chance: {x: 0, y: 100}
   responsibility_factor: 0.5
   safety_factor: 2
-  inertia_factor: 0
+  inertia_factor: 0.1
   spatial_radius: 0.25
   max_speed: 1
-  max_rotation_speed: 10
+  max_rotation_speed: 120
   acceleration: 3
   risk_aversion: 0
   dirtiness_aversion: 0
