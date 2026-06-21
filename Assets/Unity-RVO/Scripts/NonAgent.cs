@@ -17,7 +17,7 @@ namespace RVO {
 
         [Header("=== References ===")]
         [Tooltip("The parent transform that this transform OUGHT to consider its parent. If unset, defaults to this transform's parent in the hierarchy")]
-        public Transform parent;
+        public Transform environment_parent;
         [Tooltip("What's the radius of this in VO/RVO/HRVO?")]
         public float radius;
 
@@ -27,14 +27,15 @@ namespace RVO {
         public Vector3 prev_position = Vector3.zero;
 
         public bool active => gameObject.activeInHierarchy;
-        public Vector3 localPosition => (parent != null) 
-            ? parent.InverseTransformPoint(transform.position)
+        public Vector3 localPosition => (environment_parent != null) 
+            ? environment_parent.InverseTransformPoint(transform.position)
             : transform.localPosition;
 
         // Methods
         private void OnEnable() {
             // Make sure we haven't accidentally forgotten about the parent.
-            if (parent == null) parent = transform.parent;
+            if (environment_parent == null) environment_parent = transform.parent;
+            Debug.Log($"Non-Agent {gameObject.name} enabled");
         }
         
         public void UpdateAgent(float deltaTime) {

@@ -222,10 +222,11 @@ namespace RVO {
         protected virtual void GenerateNonAgents() {
             // We search the hierarchy for all game objects with the `NonAgent` component
             // There may be more or less than `num_non_agents`
-            NonAgent[] detected_non_agents = FindObjectsByType<NonAgent>(
+            NonAgent[] detected_non_agents = UnityEngine.Object.FindObjectsByType<NonAgent>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None
             );
+            
             // Start to populate `non_agents` list. At most, we can have `num_non_agents` amount of NonAgents.
             // if we happen to detect a smaller number than expected, then we need to fill the remaining amount
             // in our NativeArrays with dummy data and set them to be inactive.
