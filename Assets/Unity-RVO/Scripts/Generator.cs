@@ -435,7 +435,7 @@ namespace RVO {
             if (visionMethod == VisionMethod.KDTree) tree.Rebuild();
 
             // If recording data, do so here
-            if (record_data) recorder.RecordFrame();
+            if (recorder.is_writing) recorder.RecordFrame();
 
             /*
             // Handle the cse that our `reached_destination_count` matches the total number of agents
@@ -718,7 +718,7 @@ namespace RVO {
             //if (agents_writer.is_active) agents_writer.Disable();
             //if (fps_writer.is_active) fps_writer.Disable();
             vo_op.Terminate();
-            if (record_data) recorder.StopRecording();
+            if (recorder.is_writing) recorder.StopRecording();
         }
 
         // Helper: if we want to toggle specific agents or not, do so here

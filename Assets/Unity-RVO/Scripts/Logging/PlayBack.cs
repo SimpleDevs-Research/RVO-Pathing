@@ -18,6 +18,7 @@ namespace RVO {
             public quaternion[] rotations;
             public float3[] velocities;
             public float3[] destinations;
+            public float[] radii;
             public int[] num_neighbors;
         }
 
@@ -40,6 +41,8 @@ namespace RVO {
         private float _playbackSpeed = 1f;
         [SerializeField] private GameObject _robotPrefab;
         private List<GameObject> _spawnedRobots = new();
+        [SerializeField] private GameObject _nonAgentPrefab;
+        private List<GameObject> _spawnedNonAgents = new();
 
         public void LoadLogData() {
             // Cancel out if we don't even have a file
@@ -93,7 +96,10 @@ namespace RVO {
             }
 
             // If we're playing, we need to spawn our agents
-            if (Application.isPlaying) GenerateAgents();
+            if (Application.isPlaying) {
+                GenerateAgents();
+                GenerateNonAgents();
+            }
         }
 
         private void GenerateAgents() {
@@ -102,7 +108,7 @@ namespace RVO {
             // if we spawned any agents, might as well keep them
             if (_spawnedRobots.Count > 0) {
                 // Destroy and cull out extra agents
-                while(_spawnedRobots.Count > num_total_agents) {
+                while(_spawnedRobots.Count > num_agents) {
                     int endIndex = _spawnedRobots.Count-1;
                     Destroy(_spawnedRobots[endIndex]);
                     _spawnedRobots.RemoveAt(endIndex);
@@ -110,9 +116,29 @@ namespace RVO {
             }
 
             // Now attempt to add new number of agents
-            while(_spawnedRobots.Count < num_total_agents) {
+            while(_spawnedRobots.Count < num_agents) {
                 GameObject newRobot = Instantiate(_robotPrefab);
                 _spawnedRobots.Add(newRobot);
+            }
+        }
+
+        private void GenerateNonAgents() {
+            // Generate `num_total_agents` amount of robots.
+
+            // if we spawned any agents, might as well keep them
+            if (_spawnedNonAgents.Count > 0) {
+                // Destroy and cull out extra agents
+                while(_spawnedNonAgents.Count > num_non_agents) {
+                    int endIndex = _spawnedNonAgents.Count-1;
+                    Destroy(_spawnedNonAgents[endIndex]);
+                    _spawnedNonAgents.RemoveAt(endIndex);
+                }
+            }
+
+            // Now attempt to add new number of agents
+            while(_spawnedNonAgents.Count < num_non_agents) {
+                GameObject newNonAgent = Instantiate(_nonAgentPrefab);
+                _spawnedNonAgents.Add(newNonAgent);
             }
         }
 
@@ -127,6 +153,7 @@ namespace RVO {
                 rotations = new quaternion[num_total_agents],
                 velocities = new float3[num_total_agents],
                 destinations = new float3[num_total_agents],
+                radii = new float[num_total_agents],
                 num_neighbors = new int[num_total_agents]
             };
 
@@ -136,6 +163,7 @@ namespace RVO {
             ReadNativeArray<quaternion>(reader, ref frame.rotations);
             ReadNativeArray<float3>(reader, ref frame.velocities);
             ReadNativeArray<float3>(reader, ref frame.destinations);
+            ReadNativeArray<float>(reader, ref frame.radii);
             ReadNativeArray<int>(reader, ref frame.num_neighbors);
 
             duration = Mathf.Max(duration, frame.simulation_time);
@@ -190,11 +218,20 @@ namespace RVO {
             if (TryGetTimestampIndex(_playbackTime, out int frame_index)) {
                 PlaybackFrame frame = frames[frame_index];
                 // Update each agent
-                for(int i = 0; i < num_total_agents; i++) {
+                for(int i = 0; i < num_agents; i++) {
                     GameObject robot = _spawnedRobots[i];
                     robot.SetActive(frame.active[i]);
                     robot.transform.localPosition = frame.positions[i];
                     robot.transform.localRotation = frame.rotations[i];
+                }
+                // Update each non-agent
+                for(int j = 0; j < num_non_agents; j++) {
+                    GameObject nonAgent = _spawnedNonAgents[j];
+                    int j2 = num_agents + j;
+                    nonAgent.SetActive(frame.active[j2]);
+                    nonAgent.transform.localPosition = frame.positions[j2];
+                    nonAgent.transform.localRotation = frame.rotations[j2];
+                    nonAgent.transform.localScale = Vector3.one * frame.radii[j2];
                 }
             }
         }

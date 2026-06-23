@@ -89,6 +89,7 @@ namespace RVO {
             WriteNativeArray<quaternion>(_writer,_vo_op.rotations);
             WriteNativeArray<float3>(_writer,_vo_op.velocities);
             WriteNativeArray<float3>(_writer,_vo_op.destinations);
+            WriteNativeArray<float>(_writer,_vo_op.radii);
             WriteNativeArray<int>(_writer,_vo_op.num_neighbors);
         }
 
