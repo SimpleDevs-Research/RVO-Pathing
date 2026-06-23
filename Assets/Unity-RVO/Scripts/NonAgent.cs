@@ -22,14 +22,19 @@ namespace RVO {
         public float radius;
 
         // Outputs
-        public Vector3 position = Vector3.zero; // Note that this is ALWAYS the local position relative to `parent`
-        public Vector3 velocity = Vector3.zero; // Note that this is ALWAYS the local vector relative to `parent`
+        public Vector3 position = Vector3.zero;     // Note that this is ALWAYS the local position relative to `parent`
+        public Quaternion rotation = Quaternion.identity;
+        public Vector3 velocity = Vector3.zero;     // Note that this is ALWAYS the local vector relative to `parent`
         public Vector3 prev_position = Vector3.zero;
 
         public bool active => gameObject.activeInHierarchy;
         public Vector3 localPosition => (environment_parent != null) 
             ? environment_parent.InverseTransformPoint(transform.position)
             : transform.localPosition;
+
+        public Quaternion localRotation => (environment_parent != null) 
+            ? Quaternion.Inverse(environment_parent.rotation) * transform.rotation
+            : transform.localRotation;
 
         // Methods
         private void OnEnable() {
@@ -40,6 +45,7 @@ namespace RVO {
         
         public void UpdateAgent(float deltaTime) {
             position = localPosition;
+            rotation = localRotation;
             velocity = (position - prev_position) / deltaTime;
             prev_position = position;
         }

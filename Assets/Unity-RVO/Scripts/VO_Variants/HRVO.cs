@@ -33,7 +33,7 @@ namespace RVO {
                 this.side1 = s1;
                 this.side2 = s2;
             }
-            public string ToString() { return side1.ToString() + " --- " + side2.ToString(); }
+            public override string ToString() { return side1.ToString() + " --- " + side2.ToString(); }
         }
 
         public NativeArray<VOSides> vo_sides;

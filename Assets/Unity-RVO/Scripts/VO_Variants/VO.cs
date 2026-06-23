@@ -16,6 +16,7 @@ namespace RVO {
         public NativeArray<bool> active;
         public NativeArray<bool> is_agent;          // Is this an agent or non-agent?
         public NativeArray<float3> positions;       // Agent positions
+        public NativeArray<quaternion> rotations;   // Agent rotations
         public NativeArray<float3> velocities;      // Agent velocities
         public NativeArray<float3> destinations;    // Agent destinations
         public Transform[] agent_transforms;        // Agent transforms
@@ -53,6 +54,7 @@ namespace RVO {
             this.active = new NativeArray<bool>(num_total_agents, Allocator.Persistent);
             this.is_agent = new NativeArray<bool>(num_total_agents, Allocator.Persistent);
             this.positions = new NativeArray<float3>(num_total_agents, Allocator.Persistent);
+            this.rotations = new NativeArray<quaternion>(num_total_agents, Allocator.Persistent);
             this.velocities = new NativeArray<float3>(num_total_agents, Allocator.Persistent);
             this.radii = new NativeArray<float>(num_total_agents, Allocator.Persistent);    // THis is a VO-related param, but it's also shared b/w agents and non-agents
             
@@ -87,6 +89,7 @@ namespace RVO {
             this.active[agent_index] = t.gameObject.activeInHierarchy;
             this.is_agent[agent_index] = true;
             this.positions[agent_index] = pos;
+            this.rotations[agent_index] = Quaternion.LookRotation((dest - pos).normalized);
             this.velocities[agent_index] = Vector3.zero;
             this.destinations[agent_index] = dest;
             this.agent_transforms[agent_index] = t;
@@ -125,6 +128,7 @@ namespace RVO {
             this.active[agent_index] = non_agent.active;
             this.is_agent[agent_index] = false;
             this.positions[agent_index] = non_agent.position;
+            this.rotations[agent_index] = non_agent.rotation;
             this.velocities[agent_index] = non_agent.velocity;
             this.radii[agent_index] = non_agent.radius;
         }
@@ -133,6 +137,7 @@ namespace RVO {
             this.active[agent_index] = false;
             this.is_agent[agent_index] = false;
             this.positions[agent_index] = Vector3.zero;
+            this.rotations[agent_index] = Quaternion.identity;
             this.velocities[agent_index] = Vector3.zero;
             this.radii[agent_index] = 0f;
         }
@@ -142,6 +147,7 @@ namespace RVO {
             int agent_index = non_agent.agent_index;
             this.active[agent_index] = non_agent.active;
             this.positions[agent_index] = non_agent.position;
+            this.rotations[agent_index] = non_agent.rotation;
             this.velocities[agent_index] = non_agent.velocity;
             this.radii[agent_index] = non_agent.radius;
         }
@@ -161,6 +167,7 @@ namespace RVO {
             if (this.active.IsCreated) this.active.Dispose();
             if (this.is_agent.IsCreated) this.is_agent.Dispose();
             if (this.positions.IsCreated) this.positions.Dispose();
+            if (this.rotations.IsCreated) this.rotations.Dispose();
             if (this.velocities.IsCreated) this.velocities.Dispose();
             if (this.destinations.IsCreated) this.destinations.Dispose();
             if (this.transforms.isCreated) this.transforms.Dispose();

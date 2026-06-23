@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Base
   agent_prefabs:
-  - value: {fileID: 5177237746849340158, guid: 2104a5e757087284582c239543f1a3b5, type: 3}
+  - value: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
     spawn_chance: {x: 0, y: 100}
   responsibility_factor: 0.5
   safety_factor: 2

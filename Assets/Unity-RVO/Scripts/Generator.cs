@@ -58,6 +58,12 @@ namespace RVO {
         [Tooltip("For spatial hashing, what should be the grid size?")] public float grid_cell_size = 1f;
         [Space]
         
+        [Header("=== Misc ===")]
+        [Tooltip("Do you want to log the data of this session? If so, set this to `true`.")]
+        public bool record_data = false;
+        [Tooltip("The directory is relative to your device's PersistentPath. The fileName is relative to your directory. If you set these blank, they will be auto-generated.")]
+        public VOLogger recorder;
+        
 
         //[Header("=== Non-RVO ===")]
         /*
@@ -87,6 +93,11 @@ namespace RVO {
 
         // Outputs
         protected Vector3[] agent_positions;
+        protected int _simulation_start_frame;
+        protected float _simulation_start_time;
+        public int simulation_start_frame => _simulation_start_frame;
+        public float simulation_start_time => _simulation_start_time;
+        public float simulation_time => Time.time - _simulation_start_time;
 
         #if UNITY_EDITOR
         // Drawing boundaries
@@ -105,6 +116,10 @@ namespace RVO {
 
             // If the agent_parent is null, we set to ourselves
             if (agent_parent == null) agent_parent = this.transform;
+
+            // Set the simulation start time and frame
+            _simulation_start_frame = Time.frameCount;
+            _simulation_start_time = Time.time;
 
             // If camera is assigned, then prep it
             if (scene_cam != null) {
@@ -144,6 +159,9 @@ namespace RVO {
 
             // We want to generate our agents
             Generate();
+
+            // If you want to log data, then do so at the end of this awakening.
+            if (record_data) recorder.StartRecording(this);
         }
 
         public virtual void Generate() {
@@ -377,8 +395,7 @@ namespace RVO {
 
         // The PROCESSING step: Using RVO mechanisms, determine the optimal velocity to move in.
         //                      Note that we require a deltaTime parameter, in case someone is using this in another update cycle
-        protected virtual void Processing(float deltaTime)
-        {
+        protected virtual void Processing(float deltaTime) {
             vo_op.Execute(deltaTime);
         }
 
@@ -394,6 +411,7 @@ namespace RVO {
                 is_agent = vo_op.is_agent,
                 destination_buffer = destination_buffer,
                 positions = vo_op.positions,
+                rotations = vo_op.rotations,
                 velocities = vo_op.velocities,
                 max_rotation_speeds = vo_op.max_rotation_speeds,
                 reached_destination = vo_op.reached_destination
@@ -415,6 +433,9 @@ namespace RVO {
             // Simpe: Rebuild our Tree after moving data from `positions` into `agent_positions`
             vo_op.positions.Reinterpret<Vector3>().CopyTo(agent_positions);
             if (visionMethod == VisionMethod.KDTree) tree.Rebuild();
+
+            // If recording data, do so here
+            if (record_data) recorder.RecordFrame();
 
             /*
             // Handle the cse that our `reached_destination_count` matches the total number of agents
@@ -607,7 +628,8 @@ namespace RVO {
             [ReadOnly] public float destination_buffer;
 
             public NativeArray<float3> positions;   // read and write
-            public NativeArray<float3> velocities; // read and write
+            public NativeArray<quaternion> rotations;   // Read and write
+            public NativeArray<float3> velocities;  // read and write
             public NativeArray<bool> reached_destination;
 
             // The code actually running on the job
@@ -672,11 +694,13 @@ namespace RVO {
                     // Calculate the ratio between the maximum step and the actual intended angle. This is capped to 1.0 (or 100%)
                     float t = math.min(1f, maxStep / angle);
                     // Now rotate
-                    transform.localRotation = math.slerp(
+                    quaternion final_rotation = math.slerp(
                         current_rotation,
                         target_rotation,
                         t
                     );
+                    transform.localRotation = final_rotation;
+                    rotations[index] = final_rotation;
                     /*
                     float3 dir_to_destination = math.normalize(diff);
                     float t = math.saturate(max_rotation_speeds[index] * deltaTime);
@@ -690,10 +714,11 @@ namespace RVO {
             }
         }
 
-        protected virtual void OnDestroy() {
+        protected virtual void OnDisable() {
             //if (agents_writer.is_active) agents_writer.Disable();
             //if (fps_writer.is_active) fps_writer.Disable();
             vo_op.Terminate();
+            if (record_data) recorder.StopRecording();
         }
 
         // Helper: if we want to toggle specific agents or not, do so here

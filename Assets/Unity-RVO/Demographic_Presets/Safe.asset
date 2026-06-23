@@ -15,12 +15,12 @@ MonoBehaviour:
   id: Safe
   agent_prefabs:
   - value: {fileID: 5177237746849340158, guid: 4bb7e65bd790648d983a81a7b258e2d3, type: 3}
-    spawn_chance: {x: 0, y: 0}
+    spawn_chance: {x: 0, y: 100}
   responsibility_factor: 0.5
   safety_factor: 3
   inertia_factor: 0.1
   spatial_radius: 0.25
-  max_speed: 0
+  max_speed: 0.75
   max_rotation_speed: 120
   acceleration: 2
   risk_aversion: 0
