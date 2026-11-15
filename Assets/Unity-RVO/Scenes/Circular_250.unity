@@ -187,8 +187,10 @@ MonoBehaviour:
   num_candidate_directions: 24
   max_neighbors: 48
   visual_radius: 5
+  execution_method: 0
+  batch_size: 64
   visionMethod: 1
-  grid_cell_size: 5
+  grid_cell_size: 3
   record_data: 1
   recorder:
     dirName: VOLogger
@@ -431,7 +433,7 @@ MonoBehaviour:
   environment_parent: {fileID: 0}
   radius: 0.5
   position: {x: 0, y: 0, z: 0}
-  eulerAngles: {x: 0, y: 0, z: 0}
+  rotation: {x: 0, y: 0, z: 0, w: 1}
   velocity: {x: 0, y: 0, z: 0}
   prev_position: {x: 0, y: 0, z: 0}
 --- !u!23 &1674672663
