@@ -396,27 +396,16 @@ namespace RVO {
         private void KDTreeObservation() {
             // Refresh active states before observation.
             for (int i = 0; i < num_total_agents; i++) {
-                if (vo_op == null)
-                {
-                    Debug.LogError("vo_op is null");
-                    return;
-                }
-
                 Transform t = vo_op.transforms[i];
-
                 if (t == null) {
                     Debug.LogError($"Transform {i} is null");
                     continue;
                 }
-
-                if (i >= vo_op.transforms.length)
-                {
+                if (i >= vo_op.transforms.length){
                     Debug.LogError($"Transform index {i} out of range");
                     continue;
                 }
-
                 vo_op.active[i] = t.gameObject.activeSelf;
-                //vo_op.active[i] = vo_op.transforms[i].gameObject.activeSelf;
             }
 
             for (int i = 0; i < num_agents; i++) {
