@@ -26,6 +26,7 @@ namespace RVO {
         public NativeArray<int> neighbor_indices;           
         public NativeArray<int> num_neighbors;
         public NativeArray<bool> colliding;
+        public NativeArray<float> neighbor_distances;
         public NativeArray<bool> neighbor_collisions;
         // Agents also have some weight factors per agent
         public NativeArray<float> responsibility_factors;
@@ -67,6 +68,7 @@ namespace RVO {
             this.neighbor_indices = new NativeArray<int>(num_total_agents * generator.max_neighbors, Allocator.Persistent);
             this.num_neighbors = new NativeArray<int>(num_total_agents, Allocator.Persistent);
             this.colliding = new NativeArray<bool>(num_total_agents, Allocator.Persistent);
+            this.neighbor_distances = new NativeArray<float>(num_total_agents * generator.max_neighbors, Allocator.Persistent);
             this.neighbor_collisions = new NativeArray<bool>(num_total_agents * generator.max_neighbors, Allocator.Persistent);
 
             // Step 2c: RVO weight parameters
@@ -123,7 +125,7 @@ namespace RVO {
         // - radii
         
         // This is for adding a non-agent.
-        public virtual void AddNonAgent(NonAgent non_agent = null) {
+        public virtual void AddNonAgent(NonAgent non_agent) {
             int agent_index = non_agent.agent_index;
             this.active[agent_index] = non_agent.active;
             this.is_agent[agent_index] = false;
@@ -131,6 +133,7 @@ namespace RVO {
             this.rotations[agent_index] = non_agent.rotation;
             this.velocities[agent_index] = non_agent.velocity;
             this.radii[agent_index] = non_agent.radius;
+            this.agent_transforms[agent_index] = non_agent.transform;
         }
         // Overload to `AddNonAgent`. Means we fill with dummy data
         public virtual void AddNonAgent(int agent_index) {
@@ -140,6 +143,7 @@ namespace RVO {
             this.rotations[agent_index] = Quaternion.identity;
             this.velocities[agent_index] = Vector3.zero;
             this.radii[agent_index] = 0f;
+            this.agent_transforms[agent_index] = null;
         }
 
         // This is only callable if `non_agent` actually exists
@@ -175,6 +179,7 @@ namespace RVO {
             if (this.neighbor_indices.IsCreated) this.neighbor_indices.Dispose();
             if (this.num_neighbors.IsCreated) this.num_neighbors.Dispose();
             if (this.colliding.IsCreated) this.colliding.Dispose();
+            if (this.neighbor_distances.IsCreated) this.neighbor_distances.Dispose();
             if (this.neighbor_collisions.IsCreated) this.neighbor_collisions.Dispose();
             // Step 3: RVO Weight Parameters
             if (this.responsibility_factors.IsCreated) this.responsibility_factors.Dispose();

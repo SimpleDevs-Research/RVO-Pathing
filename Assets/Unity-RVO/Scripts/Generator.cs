@@ -319,7 +319,7 @@ namespace RVO {
             vo_op.grid.Clear();
             var buildJob = new BuildGridJob {
                 positions = vo_op.positions,    // vo_op positions in float3 space
-                cellSize = visual_radius,       // static float 
+                cellSize = grid_cell_size,       // static float 
                 grid = vo_op.grid.AsParallelWriter()
             };
             buildGridHandle = buildJob.Schedule(num_total_agents, batch_size);  // note `num_total_agents` to update everyone
@@ -332,10 +332,13 @@ namespace RVO {
 
                 grid = vo_op.grid,
                 visualRadius = visual_radius,
+                gridCellSize = grid_cell_size,
                 maxNeighbors = max_neighbors,
 
                 num_neighbors = vo_op.num_neighbors,
                 neighbor_indices = vo_op.neighbor_indices,
+                neighbor_distances = vo_op.neighbor_distances,
+                neighbor_collisions = vo_op.neighbor_collisions,
                 colliding = vo_op.colliding
             };
             observationHandle = observationJob.Schedule(num_agents, batch_size, buildGridHandle);   // Note `num_agents` instead of `num_total_agents`
@@ -343,6 +346,7 @@ namespace RVO {
         }
 
         // This observation variant uses KDTrees to observe other agents. This is not very optimal but a good fallback.
+        /*
         private void KDTreeObservation() {
             // Iterate through all agents
             for(int i = 0; i < num_agents; i++) {
@@ -387,10 +391,86 @@ namespace RVO {
                 vo_op.colliding[i] = colliding;
             }
         }
+        */
+
+        private void KDTreeObservation() {
+            // Refresh active states before observation.
+            for (int i = 0; i < num_total_agents; i++) {
+                if (vo_op == null)
+                {
+                    Debug.LogError("vo_op is null");
+                    return;
+                }
+
+                Transform t = vo_op.transforms[i];
+
+                if (t == null) {
+                    Debug.LogError($"Transform {i} is null");
+                    continue;
+                }
+
+                if (i >= vo_op.transforms.length)
+                {
+                    Debug.LogError($"Transform index {i} out of range");
+                    continue;
+                }
+
+                vo_op.active[i] = t.gameObject.activeSelf;
+                //vo_op.active[i] = vo_op.transforms[i].gameObject.activeSelf;
+            }
+
+            for (int i = 0; i < num_agents; i++) {
+                vo_op.num_neighbors[i] = 0;
+                vo_op.colliding[i] = false;
+                if (!vo_op.active[i]) continue;
+
+                List<KDQuery.DistanceResult<int>> results = new List<KDQuery.DistanceResult<int>>();
+                QueryRadiusSort(
+                    vo_op.positions[i],
+                    visual_radius,
+                    ref results
+                );
+
+                int count = 0;
+                bool collisionFound = false;
+                int baseIndex = i * max_neighbors;
+
+                foreach (var result in results) {
+                    int neighbor = result.data;
+                    if (neighbor == i) continue;
+                    if (!vo_op.active[neighbor]) continue;
+                    float collisionRadius = vo_op.radii[i] + vo_op.radii[neighbor];
+
+                    // KDQuery.DistanceResult.distance is assumed
+                    // to contain squared distance, as in your
+                    // existing implementation.
+                    float distanceSq = result.distance;
+                    bool collision = distanceSq < collisionRadius * collisionRadius;
+
+                    // Once a collision is detected, discard
+                    // previously collected noncolliding neighbors.
+                    if (collision && !collisionFound) {
+                        collisionFound = true;
+                        count = 0;
+                    }
+
+                    if (collisionFound && !collision) continue;
+                    // Do not write beyond the neighbor buffer.
+                    if (count >= max_neighbors) continue;
+
+                    vo_op.neighbor_indices[baseIndex + count] = neighbor;
+                    vo_op.neighbor_collisions[baseIndex + count] = collision;
+                    count++;
+                }
+
+                vo_op.num_neighbors[i] = count;
+                vo_op.colliding[i] = collisionFound;
+            }
+        }
 
         // Helper: Query our tree to find all agents within a radius of our original query point, sorted by distance
         public bool QueryRadiusSort(Vector3 query_position, float r, ref List<KDQuery.DistanceResult<int>> results) {
-            results = new List<KDQuery.DistanceResult<int>>();
+            results.Clear();
             query.RadiusSort(tree, query_position, r, results);
             return results.Count > 0;
         }
@@ -545,31 +625,77 @@ namespace RVO {
             [ReadOnly]  public NativeParallelMultiHashMap<int, int> grid;
 
             public float visualRadius;
+            public float gridCellSize;
             public int maxNeighbors;
 
             // Read and Write   
             public NativeArray<int> num_neighbors;
             [NativeDisableParallelForRestriction]
             public NativeArray<int> neighbor_indices;
+            [NativeDisableParallelForRestriction]
+            public NativeArray<float> neighbor_distances;
+            [NativeDisableParallelForRestriction]
+            public NativeArray<bool> neighbor_collisions;
             public NativeArray<bool> colliding;
+
+            // Helper function: checks validity of neighbor.
+            private void InsertNeighbor(
+                int agentIndex,
+                int neighborIndex,
+                float distanceSq,
+                bool collision,
+                ref int count)
+            {
+                int start = agentIndex * maxNeighbors;
+                int insertAt = 0;
+
+                while (insertAt < count)
+                {
+                    float existingDistance = neighbor_distances[start + insertAt];
+                    int existingIndex = neighbor_indices[start + insertAt];
+
+                    if (distanceSq < existingDistance || (distanceSq == existingDistance && neighborIndex < existingIndex)) {
+                        break;
+                    }
+
+                    insertAt++;
+                }
+
+                if (insertAt >= maxNeighbors)   return;
+
+                int newCount = math.min(count + 1, maxNeighbors);
+
+                for (int j = newCount - 1; j > insertAt; j--) {
+                    neighbor_indices[start + j] = neighbor_indices[start + j - 1];
+                    neighbor_distances[start + j] = neighbor_distances[start + j - 1];
+                    neighbor_collisions[start + j] = neighbor_collisions[start + j - 1];
+                }
+
+                neighbor_indices[start + insertAt] = neighborIndex;
+                neighbor_distances[start + insertAt] = distanceSq;
+                neighbor_collisions[start + insertAt] = collision;
+                count = newCount;
+            }
 
             public void Execute(int agentIndex) {
                 if (!active[agentIndex]) {
                     num_neighbors[agentIndex] = 0;
+                    colliding[agentIndex] = false;
                     return;
                 }
 
                 float radiusSq = visualRadius * visualRadius;
                 float3 position = positions[agentIndex];
-                int2 centerCell = SpatialHash.Cell(position, visualRadius);
+                int2 centerCell = SpatialHash.Cell(position, gridCellSize);
 
                 int count = 0;
                 bool collisionFound = false;
 
                 int baseIndex = agentIndex * maxNeighbors;
+                int cellRange = (int)math.ceil(visualRadius / gridCellSize);
 
-                for (int dx = -1; dx <= 1; dx++) {
-                    for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -cellRange; dx <= cellRange; dx++) {
+                    for (int dz = -cellRange; dz <= cellRange; dz++) {
                         int2 cell = centerCell + new int2(dx, dz);
                         int hash = SpatialHash.Hash(cell);
                         NativeParallelMultiHashMapIterator<int> it;
@@ -587,18 +713,19 @@ namespace RVO {
                             float collisionRadius = radii[agentIndex] + radii[neighbor];
                             bool collision = distSq < collisionRadius * collisionRadius;
 
-                            if (collision) {
-                                if (!collisionFound) {
-                                    collisionFound = true;
-                                    count = 0;
-                                }
+                            if (collision && !collisionFound) {
+                                collisionFound = true;
+                                count = 0;
                             }
                             if (collisionFound && !collision) continue;
 
-                            if (count < maxNeighbors) {
-                                neighbor_indices[baseIndex + count] = neighbor;
-                                count++;
-                            }
+                            InsertNeighbor(
+                                agentIndex,
+                                neighbor,
+                                distSq,
+                                collision,
+                                ref count
+                            );
                         }
                         while (grid.TryGetNextValue( out neighbor, ref it));
                     }
