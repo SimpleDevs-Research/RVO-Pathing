@@ -15,7 +15,9 @@ namespace RVO {
         // Job handle for managing the VO job
         JobHandle jobHandle = default;
 
-        public override void Execute( float deltaTime, int num_threads=64 ) {
+        public override void Execute( float deltaTime, int batch_size=64 ) {
+
+            // Prepare the job
             var job = new RVOJobParallelFor() {
                 positions = this.positions,
                 velocities = this.velocities,
@@ -31,14 +33,22 @@ namespace RVO {
                 radii = this.radii,
                 max_speeds = this.max_speeds,
                 // For now, assume equal radius size among all agents
-                num_directions =generator.num_candidate_directions,
+                num_directions = generator.num_candidate_directions,
                 max_neighbors = generator.max_neighbors,
                 deltaTime = deltaTime,
                 // The output
                 new_velocities = this.new_velocities
             };
-            jobHandle = job.Schedule(this.positions.Length, num_threads);
-            jobHandle.Complete();
+
+            // Depending on our generator's execution mode, we either parallelize operations or not 
+            if (generator.execution_method == Generator.ExecutionMethod.Parallel) {
+                jobHandle = job.Schedule(this.positions.Length, batch_size);
+                jobHandle.Complete();
+            } else {
+                for(int i = 0; i < this.positions.Length; i++) {
+                    job.Execute(i);
+                }
+            }
         }
     }
 

@@ -46,28 +46,8 @@ namespace RVO {
             agent_vo_sides = new VOSides[this.vo_sides.Length];
         }
 
-        public override void Execute(float deltaTime, int num_threads = 128) {
-            /*
-            var neighbors_job = new NeighborSidesJobParallelFor() {
-                active = this.active,
-                reached_destination = this.reached_destination,
-                positions = this.positions,
-                velocities = this.velocities,
-                neighbor_indices = this.neighbor_indices,
-                num_neighbors = this.num_neighbors,
-                radii = this.radii,
-                max_neighbors = generator.max_neighbors,
-                vo_sides = this.vo_sides
-            };
-            neighborJobHandle = neighbors_job.Schedule(this.positions.Length, num_threads);
-            neighborJobHandle.Complete();
-
-            this.vo_sides.CopyTo(agent_vo_sides);
-            for(int i = 0; i < agent_vo_sides.Length; i++) {
-                Debug.Log($"{i}: {agent_vo_sides[i].ToString()}");
-            }
-            */
-            
+        public override void Execute(float deltaTime, int batch_size = 128) {
+            // Prepare the job 
             var hrvo_job = new HRVOJobParallelFor() {
                 positions = this.positions,
                 velocities = this.velocities,
@@ -90,10 +70,16 @@ namespace RVO {
                 // The output
                 new_velocities = this.new_velocities
             };
-            //hrvoJobHandle = hrvo_job.Schedule(this.positions.Length, num_threads, neighborJobHandle);
-            hrvoJobHandle = hrvo_job.Schedule(this.positions.Length, num_threads);
-            hrvoJobHandle.Complete();
             
+            // Depending on our generator's execution mode, we either parallelize operations or not 
+            if (generator.execution_method == Generator.ExecutionMethod.Parallel) {
+                hrvoJobHandle = hrvo_job.Schedule(this.positions.Length, batch_size);
+                hrvoJobHandle.Complete();
+            } else {
+                for(int i = 0; i < this.positions.Length; i++) {
+                    hrvo_job.Execute(i);
+                }
+            }    
 
         }
 

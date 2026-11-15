@@ -28,6 +28,7 @@ namespace RVO {
         public enum SpawnStyle { Random, Rows, Circular }
         public enum VisionMethod { KDTree, SpatialHash }
         public enum RVOMethod { RVO, HRVO }
+        public enum ExecutionMethod { Parallel, Sequential }
 
         [Header("=== References, Environment Setup ===")]
         [Tooltip("The Transform parent of all agents")]         public Transform agent_parent;
@@ -45,7 +46,7 @@ namespace RVO {
         [Tooltip("List of transforms that ought to be tracked as non-agents. Size cannot exceed `num_non_agents`.")]    public List<NonAgent> non_agents;
         public int num_total_agents => num_agents + num_non_agents; // Total number of agents
         
-        [Header("=== RVO Global Settings ===")]
+        [Header("=== VO Global Settings ===")]
         [Tooltip("Which RVO style should we use?")]             public RVOMethod rvo_method = RVOMethod.RVO;
         [Tooltip("All demographic groups used when generating agents. Note that the demographic groups' chances must total to 100")]
         public Demographics demographics;
@@ -53,10 +54,17 @@ namespace RVO {
         [Tooltip("How many candidate directions to consider?")]         public int num_candidate_directions = 16;
         [Tooltip("How many neighbors to consider?")]                    public int max_neighbors = 8;
         [Tooltip("Radius of 'vision' - for neighbor search")]           public float visual_radius = 5f;
+        [Space]
+
+        [Header("=== Parallelization Settings ===")]
+        [Tooltip("Should RVO operations be parallelized?")]
+        public ExecutionMethod execution_method = ExecutionMethod.Parallel; 
+        [Tooltip("The batch size dictates how many jobs are done per batch. Smaller = more stable but more overhead; larger = less stable but less overhead")]
+        public int batch_size = 64;
         [Tooltip("Which vision model do we use? Spatial Hash uses parallelized jobs, while KDTrees use For loops.")]
         public VisionMethod visionMethod = VisionMethod.SpatialHash;
-        [Tooltip("For spatial hashing, what should be the grid size?")] public float grid_cell_size = 1f;
-        [Space]
+        [Tooltip("For spatial hashing, what should be the grid size?")]
+        public float grid_cell_size = 1f;
         
         [Header("=== Misc ===")]
         [Tooltip("Do you want to log the data of this session? If so, set this to `true`.")]
@@ -110,7 +118,7 @@ namespace RVO {
         }
 #endif
 
-        private void Awake() {
+        protected virtual void Awake() {
             // Set initial instance
             current = this;
 
@@ -314,7 +322,7 @@ namespace RVO {
                 cellSize = visual_radius,       // static float 
                 grid = vo_op.grid.AsParallelWriter()
             };
-            buildGridHandle = buildJob.Schedule(num_total_agents, 64);  // note `num_total_agents` to update everyone
+            buildGridHandle = buildJob.Schedule(num_total_agents, batch_size);  // note `num_total_agents` to update everyone
 
             // However, `ObservationJob` only needs to update agent-agents, not non-agents.
             var observationJob = new ObservationJob {
@@ -330,7 +338,7 @@ namespace RVO {
                 neighbor_indices = vo_op.neighbor_indices,
                 colliding = vo_op.colliding
             };
-            observationHandle = observationJob.Schedule(num_agents, 64, buildGridHandle);   // Note `num_agents` instead of `num_total_agents`
+            observationHandle = observationJob.Schedule(num_agents, batch_size, buildGridHandle);   // Note `num_agents` instead of `num_total_agents`
             observationHandle.Complete();
         }
 
@@ -396,7 +404,7 @@ namespace RVO {
         // The PROCESSING step: Using RVO mechanisms, determine the optimal velocity to move in.
         //                      Note that we require a deltaTime parameter, in case someone is using this in another update cycle
         protected virtual void Processing(float deltaTime) {
-            vo_op.Execute(deltaTime);
+            vo_op.Execute(deltaTime, batch_size);
         }
 
         // The MOVEMENT step: Knowing the optimal velocities to move in, adjust the position of each agent.

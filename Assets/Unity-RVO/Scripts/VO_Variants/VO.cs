@@ -158,7 +158,7 @@ namespace RVO {
         }
 
         // This is called per update loop.
-        public virtual void Execute( float deltaTime, int num_threads=64 ) {}
+        public virtual void Execute( float deltaTime, int batch_size=64 ) {}
 
         // This is called when the generator is terminated
         public virtual void Terminate() {
